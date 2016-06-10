@@ -1,0 +1,9 @@
+#pragma once
+#ifndef API_STREAM_HEADER
+#define API_STREAM_HEADER
+
+#include "stream.hpp"
+#include "readable.hpp"
+#include "writable.hpp"
+
+#endif
