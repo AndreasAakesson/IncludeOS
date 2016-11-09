@@ -159,7 +159,7 @@ uint16_t TCP::checksum(const tcp::Packet& packet)
   pseudo_hdr.saddr.whole = packet.src().whole;
   pseudo_hdr.daddr.whole = packet.dst().whole;
   pseudo_hdr.zero = 0;
-  pseudo_hdr.proto = IP4::IP4_TCP;
+  pseudo_hdr.proto = static_cast<uint8_t>(IP4::proto::IP4_TCP);
   pseudo_hdr.tcp_length = htons(tcp_length);
 
   union Sum{

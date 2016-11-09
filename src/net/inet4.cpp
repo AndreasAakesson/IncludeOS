@@ -20,7 +20,7 @@ Inet4::Inet4(hw::Nic& nic)
 
   /** Upstream delegates */
   auto arp_bottom(upstream{arp_, &Arp::bottom});
-  auto ip4_bottom(upstream{ip4_, &IP4::bottom});
+  auto ip4_bottom(IP4::upstream{ip4_, &IP4::bottom});
   auto icmp4_bottom(upstream{icmp_, &ICMPv4::bottom});
   auto udp4_bottom(upstream{udp_, &UDP::bottom});
   auto tcp_bottom(upstream{tcp_, &TCP::bottom});

@@ -18,12 +18,12 @@
 #pragma once
 
 #include "udp.hpp"
-#include "packet_ip4.hpp"
+#include "packet.hpp"
 #include <cassert>
 
 namespace net
 {
-  class PacketUDP : public PacketIP4
+  class PacketUDP : public ip4::Packet
   {
   public:
 
@@ -38,7 +38,7 @@ namespace net
     //! a valid MTU-sized buffer
     void init()
     {
-      PacketIP4::init();
+      ip4::Packet::init();
       // source and destination ports
       header().sport = 0;
       header().dport = 0;
@@ -48,7 +48,7 @@ namespace net
       header().checksum = 0;
       // set UDP payload location (!?)
       set_payload(buffer() + sizeof(UDP::full_header));
-      set_protocol(IP4::IP4_UDP);
+      set_protocol(ip4::Proto::IP4_UDP);
     }
 
     UDP::port_t src_port() const

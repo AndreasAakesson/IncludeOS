@@ -32,7 +32,9 @@ namespace net
   class Buffer
   {
   public:
-    using ptr = std::unique_ptr<Buffer>;
+    template <typename T>
+    using bufptr  = std::unique_ptr<T, std::default_delete<Buffer>>;
+    using ptr     = bufptr<Buffer>;
     /**
      *  Construct, using existing buffer.
      *
@@ -111,20 +113,25 @@ namespace net
     static void operator delete (void*) {}
 
     /**
-     * @brief      Moves the payload "upstream" (forward ->)
+     * @brief      Moves a network unit upstream, moving the payload and converts to another type of unit.
      *
+     * @param[in]  base  A unique_ptr to unit to be converted from
+     *
+     * @tparam     Derived    What Base should convert to
+     * @tparam     Base       Unit to be downcasted
+     * @tparam     Parent     If sibling, first upcast before downcast (defaults to Base)
+     *
+     * @return     A unique_ptr of Derived type
      */
-    void upstream()
-    { payload_ = buffer(); /* In this case, the buffer starts where the link begins */ }
-
-    template <class Derived, class Base>
-    static auto static_move_upstream(std::unique_ptr<Base>&& base)
+    template <class Derived, class Base, class Parent = Base>
+    static auto static_move_upstream(bufptr<Base>&& base)
     {
-      static_assert(std::is_base_of<Base, Derived>::value, "Derived network packet does not inherit base.");
+      static_assert(std::is_base_of<Buffer, Base>::value, "Moving something else than a Buffer.");
+      static_assert(std::is_base_of<Parent, Derived>::value, "Derived network packet does not inherit base.");
       // Move payload upstream
       base->upstream();
-      auto* d = static_cast<Derived *>(base.release());
-      return std::unique_ptr<Derived>(d);
+      auto* d = static_cast<Derived*>((Parent*)base.release());
+      return bufptr<Derived>(d);
     }
 
   protected:
@@ -170,6 +177,13 @@ namespace net
     ip4::Addr             next_hop4_;
     BufferStore::buffer_t payload_ {nullptr};
     BufferStore::buffer_t buf_[0];
+
+    /**
+     * @brief      Moves the payload "upstream" (forward ->)
+     * In this case, the buffer starts where the link header begins.
+     */
+    void upstream()
+    { payload_ = buffer(); }
   }; //< class Buffer
 
 } //< namespace net

@@ -19,22 +19,40 @@
 #ifndef NET_IP4_HEADER_HPP
 #define NET_IP4_HEADER_HPP
 
+#include "addr.hpp" // ip4::Addr
+
+#include <net/inet_common.hpp> // temp, typename LinkLayer
+#include <net/ethernet/ethernet.hpp> // temp
+
 namespace net {
 namespace ip4 {
 
-/** IP4 header representation */
-struct Header {
-  uint8_t  version_ihl;
-  uint8_t  tos;
-  uint16_t tot_len;
-  uint16_t id;
-  uint16_t frag_off_flags;
-  uint8_t  ttl;
-  uint8_t  protocol;
-  uint16_t check;
-  Addr     saddr;
-  Addr     daddr;
-};
+  /** Known transport layer protocols. */
+  enum class Proto { IP4_ICMP=1, IP4_UDP=17, IP4_TCP=6 };
+
+  /** IP4 header representation */
+  struct Header {
+    uint8_t  version_ihl;
+    uint8_t  tos;
+    uint16_t tot_len;
+    uint16_t id;
+    uint16_t frag_off_flags;
+    uint8_t  ttl;
+    uint8_t  protocol;
+    uint16_t check;
+    Addr     saddr;
+    Addr     daddr;
+  };
+
+  /**
+   *  The full header including IP
+   *
+   *  @TODO: Remove full header (when the time is right)
+   */
+  struct Full_header {
+    uint8_t link_hdr[sizeof(typename LinkLayer::header)];
+    Header  ip_hdr;
+  };
 
 }
 }

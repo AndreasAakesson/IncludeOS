@@ -19,7 +19,7 @@
 
 #include <os>
 #include <net/inet_common.hpp>
-#include <net/ip4/packet_ip4.hpp>
+#include <net/ip4/packet.hpp>
 #include <net/util.hpp>
 
 namespace net {
@@ -66,11 +66,11 @@ namespace net {
     debug("<ICMP> Transmitting answer\n");
 
     // Populate response IP header
-    auto ip4_pckt = static_unique_ptr_cast<PacketIP4>(std::move(packet_ptr));
+    auto ip4_pckt = static_unique_ptr_cast<ip4::Packet>(std::move(packet_ptr));
     ip4_pckt->init();
     ip4_pckt->set_src(full_hdr->ip_hdr.daddr);
     ip4_pckt->set_dst(full_hdr->ip_hdr.saddr);
-    ip4_pckt->set_protocol(IP4::IP4_ICMP);
+    ip4_pckt->set_protocol(IP4::proto::IP4_ICMP);
     ip4_pckt->set_ip_data_length(sizeof(icmp_header) + size - sizeof(full_header));
 
     // Copy payload from old to new packet

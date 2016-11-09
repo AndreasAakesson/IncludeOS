@@ -23,6 +23,13 @@
 #include <net/frame.hpp>
 #include <net/inet_common.hpp>
 
+// temporary until full_header on packets (and by that ethernet) is removed
+namespace net {
+  namespace ip4 {
+    class Packet;
+  }
+}
+
 namespace hw {
 
   /**
@@ -30,8 +37,6 @@ namespace hw {
    */
   class Nic {
   public:
-    using upstream    = delegate<void(net::Packet_ptr)>;
-    using downstream  = upstream;
 
     enum class Proto {ETH, IEEE802111};
 
@@ -50,10 +55,10 @@ namespace hw {
     virtual uint16_t MTU() const noexcept = 0;
 
     /** Implemented by the underlying (link) driver */
-    virtual downstream create_link_downstream() = 0;
-    virtual void set_ip4_upstream(upstream handler) = 0;
-    virtual void set_ip6_upstream(upstream handler) = 0;
-    virtual void set_arp_upstream(upstream handler) = 0;
+    virtual net::downstream create_link_downstream() = 0;
+    virtual void set_ip4_upstream(net::upstream_spec<net::ip4::Packet> handler) = 0;
+    virtual void set_ip6_upstream(net::upstream handler) = 0;
+    virtual void set_arp_upstream(net::upstream handler) = 0;
 
     net::BufferStore& bufstore() noexcept
     { return bufstore_; }

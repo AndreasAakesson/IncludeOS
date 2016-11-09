@@ -21,21 +21,18 @@
 #define NET_INET_COMMON_HPP
 
 #include <delegate>
-#include <net/packet.hpp>
+#include <net/buffer.hpp>
 
 namespace net {
-  // Packet must be forward declared to avoid circular dependency
-  // i.e. IP uses Packet, and Packet uses IP headers
-  class Packet;
   class Ethernet;
 
   using LinkLayer = Ethernet;
 
-  using Packet_ptr = std::unique_ptr<Packet>;
-
   // Downstream / upstream delegates
-  using downstream = delegate<void(Packet_ptr)>;
-  using upstream = downstream;
+  template<typename T = Buffer>
+  using upstream_spec = delegate<void(std::unique_ptr<T, std::default_delete<Buffer>>)>;
+  using upstream      = upstream_spec<>; // temp, TODO: only use upstream<T>
+  using downstream    = upstream;
 
   // Delegate for signalling available buffers in device transmit queue
   using transmit_avail_delg = delegate<void(size_t)>;

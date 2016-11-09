@@ -9,6 +9,9 @@ namespace net {
 
   /** Anonymous link Frame, used for casting purposes */
   class Frame : public net::Buffer {
+  private:
+    void upstream() const
+    { printf("<net::Frame> Calling upstream on frame does nothing.\n"); }
 
   }; // < class Frame
 }

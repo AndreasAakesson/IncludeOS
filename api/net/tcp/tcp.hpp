@@ -31,7 +31,7 @@
 #include "headers.hpp"
 #include "listener.hpp"
 #include "socket.hpp"
-
+#include <net/ip4/ip4.hpp>
 
 namespace net {
 

@@ -19,7 +19,7 @@
 #ifndef NET_TCP_PACKET_HPP
 #define NET_TCP_PACKET_HPP
 
-#include <net/ip4/packet_ip4.hpp> // PacketIP4
+#include <net/ip4/packet.hpp> // ip4::Packet
 #include <net/util.hpp> // byte ordering helpers
 
 #include "common.hpp" // constants, seq_t
@@ -40,7 +40,7 @@ namespace tcp {
   A Wrapper for a TCP Packet. Is everything as a IP4 Packet,
   in addition to the TCP Header and functions to modify this and the control bits (FLAGS).
 */
-class Packet : public PacketIP4 {
+class Packet : public ip4::Packet {
 public:
 
   inline Header& tcp_header() const
@@ -50,12 +50,12 @@ public:
   //! a valid MTU-sized buffer
   void init()
   {
-    PacketIP4::init();
+    ip4::Packet::init();
 
     // clear TCP headers
     memset(ip_data(), 0, sizeof(Header));
 
-    set_protocol(IP4::IP4_TCP);
+    set_protocol(ip4::Proto::IP4_TCP);
     set_win(tcp::default_window_size);
     set_offset(5);
     set_length();

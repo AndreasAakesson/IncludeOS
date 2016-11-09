@@ -97,7 +97,7 @@ void UDP::transmit(UDP::Packet_ptr udp)
          udp->dst().str().c_str(), udp->dst_port());
 
   assert(udp->length() >= sizeof(udp_header));
-  assert(udp->protocol() == IP4::IP4_UDP);
+  assert(static_cast<IP4::proto>(udp->protocol()) == IP4::proto::IP4_UDP);
 
   network_layer_out_(std::move(udp));
 }

@@ -12,15 +12,14 @@ template <class T>
 class Link_layer : public hw::Nic {
 public:
   using Protocol    = T;
-  using upstream    = hw::Nic::upstream;
-  using downstream  = hw::Nic::downstream;
+
 public:
   explicit Link_layer(Protocol&& protocol, uint32_t bufstore_sz, uint16_t bufsz);
 
   downstream create_link_downstream() override
   { return {link_, &Protocol::transmit}; }
 
-  void set_ip4_upstream(upstream handler) override
+  void set_ip4_upstream(upstream_spec<net::ip4::Packet> handler) override
   { link_.set_ip4_upstream(handler); }
 
   void set_ip6_upstream(upstream handler) override

@@ -11,7 +11,7 @@ namespace net {
 
     class Frame : public net::Frame {
     public:
-      using ptr = std::unique_ptr<Frame>;
+      using ptr = bufptr<Frame>;
 
       Header& header() const
       { return *reinterpret_cast<Header*>(payload()); }
@@ -22,8 +22,12 @@ namespace net {
       uint8_t* data() const
       { return payload() + header_len(); }
 
+    private:
+      /** Give access to upstream/downstream */
+      friend net::Buffer;
+
       void upstream()
-      { set_payload(payload() + header_len()); }
+      { set_payload(payload() + header_len()); /*printf("<eth::Frame> Payload += %u\n", header_len());*/ }
 
       void downstream()
       { set_payload(payload() - header_len()); }

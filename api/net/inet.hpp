@@ -37,7 +37,7 @@ namespace net {
   struct Inet {
     using Stack = Inet<IPV>;
 
-    using Forward_delg = delegate<void(Stack& source, typename IPV::IP_packet_ptr)>;
+    using Forward_delg = delegate<void(Stack& source, typename IPV::Packet::ptr)>;
 
     template <typename IPv>
     using resolve_func = delegate<void(typename IPv::addr)>;

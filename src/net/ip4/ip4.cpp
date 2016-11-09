@@ -1,6 +1,6 @@
 // This file is a part of the IncludeOS unikernel - www.includeos.org
 //
-// Copyright 2015 Oslo and Akershus University College of Applied Sciences
+// Copyright 2015-2016 Oslo and Akershus University College of Applied Sciences
 // and Alfred Bratterud
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,6 @@
 #define DEBUG2 // Allow debug lvl 2
 
 #include <net/ip4/ip4.hpp>
-#include <net/ip4/packet_ip4.hpp>
-#include <net/packet.hpp>
 #include <statman>
 
 namespace net {
@@ -39,10 +37,10 @@ namespace net {
   // gateway_.whole = (local_ip_.whole & netmask_.whole) | DEFAULT_GATEWAY;
 }
 
-  void IP4::bottom(Packet_ptr pckt) {
+  void IP4::bottom(ip4::Packet::ptr packet) {
     debug2("<IP4 handler> got the data.\n");
     // Cast to IP4 Packet
-    auto packet = static_unique_ptr_cast<net::PacketIP4>(std::move(pckt));
+    //auto packet = static_unique_ptr_cast<net::PacketIP4>(std::move(pckt));
 
     // Stat increment packets received
     packets_rx_++;
@@ -54,7 +52,7 @@ namespace net {
                 (hdr->daddr | stack_.netmask()) != ADDR_BCAST)) {
 
       if (forward_packet_)
-        forward_packet_(stack_, static_unique_ptr_cast<IP_packet>(std::move(pckt)));
+        forward_packet_(stack_, std::move(packet));
       else
         packets_dropped_++;
 
@@ -64,23 +62,24 @@ namespace net {
     debug2("\t Source IP: %s Dest.IP: %s\n",
            hdr->saddr.str().c_str(), hdr->daddr.str().c_str());
 
-    switch(hdr->protocol){
-    case IP4_ICMP:
-      debug2("\t Type: ICMP\n");
-      icmp_handler_(std::move(packet));
-      break;
-    case IP4_UDP:
-      debug2("\t Type: UDP\n");
-      udp_handler_(std::move(packet));
-      break;
-    case IP4_TCP:
-      tcp_handler_(std::move(packet));
-      debug2("\t Type: TCP\n");
-      break;
-    default:
-      debug("\t Type: UNKNOWN %i\n", hdr->protocol);
-      break;
-    }
+    switch(static_cast<proto>(hdr->protocol))
+    {
+      case proto::IP4_ICMP:
+        debug2("\t Type: ICMP\n");
+        icmp_handler_(std::move(packet));
+        break;
+      case proto::IP4_UDP:
+        debug2("\t Type: UDP\n");
+        udp_handler_(std::move(packet));
+        break;
+      case proto::IP4_TCP:
+        tcp_handler_(std::move(packet));
+        debug2("\t Type: TCP\n");
+        break;
+      default:
+        debug("\t Type: UNKNOWN %i\n", hdr->protocol);
+        break;
+      }
   }
 
   uint16_t IP4::checksum(ip4::Header* hdr) {
@@ -90,7 +89,7 @@ namespace net {
   void IP4::transmit(Packet_ptr pckt) {
     assert(pckt->size() > sizeof(IP4::full_header));
 
-    auto ip4_pckt = static_unique_ptr_cast<PacketIP4>(std::move(pckt));
+    auto ip4_pckt = static_unique_ptr_cast<ip4::Packet>(std::move(pckt));
     ip4_pckt->make_flight_ready();
 
     IP4::ip_header& hdr = ip4_pckt->ip_header();

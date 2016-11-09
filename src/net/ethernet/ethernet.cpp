@@ -24,6 +24,7 @@
 #include <net/packet.hpp>
 #include <net/util.hpp>
 #include <statman>
+#include <net/ip4/packet.hpp>
 
 namespace net {
 
@@ -39,7 +40,8 @@ namespace net {
   // uint16_t(0x3333), uint32_t(0x02000000)
   const Ethernet::addr Ethernet::IPv6mcast_02 {0x33,0x33,0x02,0,0,0};
 
-  static void ignore(Frame::ptr) noexcept {
+  template <class T>
+  static void ignore(std::unique_ptr<T, std::default_delete<Buffer>>) noexcept {
     debug("<Ethernet upstream> Ignoring data (no real upstream)\n");
   }
 
@@ -48,9 +50,9 @@ namespace net {
     packets_rx_{Statman::get().create(Stat::UINT64, ".ethernet.packets_rx").get_uint64()},
     packets_tx_{Statman::get().create(Stat::UINT64, ".ethernet.packets_tx").get_uint64()},
     packets_dropped_{Statman::get().create(Stat::UINT32, ".ethernet.packets_dropped").get_uint32()},
-    ip4_upstream_{ignore},
-    ip6_upstream_{ignore},
-    arp_upstream_{ignore},
+    ip4_upstream_{ignore<ip4::Packet>},
+    ip6_upstream_{ignore<Buffer>},
+    arp_upstream_{ignore<Buffer>},
     physical_downstream_(physical_downstream)
 {
 }
@@ -95,7 +97,7 @@ namespace net {
     switch(eth.type) {
     case ETH_IP4:
       debug2("IPv4 packet\n");
-      ip4_upstream_(std::move(frame));
+      ip4_upstream_(Frame::static_move_upstream<ip4::Packet, ethernet::Frame, net::Frame>(std::move(frame)));
       break;
 
     case ETH_IP6:
