@@ -39,7 +39,7 @@ namespace net {
   // uint16_t(0x3333), uint32_t(0x02000000)
   const Ethernet::addr Ethernet::IPv6mcast_02 {0x33,0x33,0x02,0,0,0};
 
-  static void ignore(net::Packet_ptr) noexcept {
+  static void ignore(Frame::ptr) noexcept {
     debug("<Ethernet upstream> Ignoring data (no real upstream)\n");
   }
 
@@ -75,37 +75,37 @@ namespace net {
     physical_downstream_(std::move(pckt));
   }
 
-  void Ethernet::receive(Packet_ptr pckt) {
-    Expects(pckt->size() > 0);
+  void Ethernet::receive(Frame::ptr frame) {
+    Expects(frame->size() > 0);
 
-    header* eth = reinterpret_cast<header*>(pckt->buffer());
+    auto&& eth = frame->header();
 
     /** Do we pass on ethernet headers? As for now, yes.
         data += sizeof(header);
         len -= sizeof(header);
     */
     debug2("<Ethernet IN> %s => %s , Eth.type: 0x%x ",
-           eth->src.str().c_str(), eth->dest.str().c_str(), eth->type);
+           eth.src.str().c_str(), eth.dest.str().c_str(), eth.type);
 
     // Stat increment packets received
     packets_rx_++;
 
     bool dropped = false;
 
-    switch(eth->type) {
+    switch(eth.type) {
     case ETH_IP4:
       debug2("IPv4 packet\n");
-      ip4_upstream_(std::move(pckt));
+      ip4_upstream_(std::move(frame));
       break;
 
     case ETH_IP6:
       debug2("IPv6 packet\n");
-      ip6_upstream_(std::move(pckt));
+      ip6_upstream_(std::move(frame));
       break;
 
     case ETH_ARP:
       debug2("ARP packet\n");
-      arp_upstream_(std::move(pckt));
+      arp_upstream_(std::move(frame));
       break;
 
     case ETH_WOL:
@@ -121,10 +121,10 @@ namespace net {
     default:
       dropped = true;
       // This might be 802.3 LLC traffic
-      if (net::ntohs(eth->type) > 1500) {
-        debug2("<Ethernet> UNKNOWN ethertype 0x%x\n", ntohs(eth->type));
+      if (net::ntohs(eth.type) > 1500) {
+        debug2("<Ethernet> UNKNOWN ethertype 0x%x\n", ntohs(eth.type));
       }else {
-        debug2("IEEE802.3 Length field: 0x%x\n", ntohs(eth->type));
+        debug2("IEEE802.3 Length field: 0x%x\n", ntohs(eth.type));
       }
       break;
     }

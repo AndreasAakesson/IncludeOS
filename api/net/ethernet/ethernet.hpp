@@ -77,7 +77,7 @@ namespace net {
     using trailer = ethernet::trailer_t;
 
     /** Bottom upstream input, "Bottom up". Handle raw ethernet buffer. */
-    void receive(Packet_ptr);
+    void receive(Frame::ptr);
 
     /** Delegate upstream IPv4 upstream. */
     void set_ip4_upstream(upstream del)

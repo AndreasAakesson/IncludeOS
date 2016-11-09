@@ -34,8 +34,8 @@ public:
 
 protected:
   /** Called by the underlying physical driver inheriting the Link_layer */
-  void receive(net::Packet_ptr pkt)
-  { link_.receive(std::move(pkt)); }
+  void receive(typename Protocol::Frame::ptr frame)
+  { link_.receive(std::move(frame)); }
 
 private:
   Protocol link_;

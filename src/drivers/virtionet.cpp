@@ -48,7 +48,7 @@ void VirtioNet::drop(Packet_ptr){
 
 VirtioNet::VirtioNet(hw::PCI_Device& d)
   : Virtio(d),
-    Link(Link_protocol{{this, &VirtioNet::transmit}, mac()}, 2048, sizeof(net::Packet) + MTU()),
+    Link(Link_proto{{this, &VirtioNet::transmit}, mac()}, 2048, sizeof(net::Packet) + MTU()),
     packets_rx_{Statman::get().create(Stat::UINT64, ifname() + ".packets_rx").get_uint64()},
     packets_tx_{Statman::get().create(Stat::UINT64, ifname() + ".packets_tx").get_uint64()},
     /** RX que is 0, TX Queue is 1 - Virtio Std. §5.1.2  */
@@ -200,8 +200,9 @@ void VirtioNet::msix_recv_handler()
 
     auto res = rx_q.dequeue();
 
-    auto pckt_ptr = recv_packet(res.data(), res.size());
-    Link::receive(std::move(pckt_ptr));
+    auto buf_ptr = recv_buffer(res.data(), res.size());
+    auto frame = net::Buffer::static_move_upstream<Link_proto::Frame>(std::move(buf_ptr));
+    Link::receive(std::move(frame));
 
     // Requeue a new buffer
     add_receive_buffer();
@@ -280,7 +281,7 @@ void VirtioNet::add_receive_buffer(){
 
   auto* pkt = bufstore().get_buffer();
   // get a pointer to a virtionet header
-  auto* vnet = pkt + sizeof(Packet) - sizeof(virtio_net_hdr);
+  auto* vnet = pkt + sizeof(Buffer) - sizeof(virtio_net_hdr);
 
   debug2("<VirtioNet> Added receive-bufer @ 0x%x \n", (uint32_t)buf);
 
@@ -296,13 +297,12 @@ void VirtioNet::add_receive_buffer(){
   rx_q.enqueue(tokens);
 }
 
-std::unique_ptr<Packet>
-VirtioNet::recv_packet(uint8_t* data, uint16_t size)
+Buffer::ptr VirtioNet::recv_buffer(uint8_t* data, uint16_t size)
 {
-  auto* ptr = (Packet*) (data + sizeof(VirtioNet::virtio_net_hdr) - sizeof(Packet));
-  new (ptr) Packet(bufsize(), size - sizeof(virtio_net_hdr), &bufstore());
+  auto* ptr = (Buffer*) (data + sizeof(VirtioNet::virtio_net_hdr) - sizeof(Buffer));
+  new (ptr) Buffer(bufsize(), size - sizeof(virtio_net_hdr), &bufstore());
 
-  return std::unique_ptr<Packet> (ptr);
+  return Buffer::ptr(ptr);
 }
 
 void VirtioNet::service_queues(){
@@ -322,8 +322,10 @@ void VirtioNet::service_queues(){
     // Do one RX-packet
     while (rx_q.new_incoming()) {
       auto res = rx_q.dequeue();
-      auto pckt_ptr = recv_packet(res.data(), res.size());
-      Link::receive(std::move(pckt_ptr));
+      auto buf_ptr = recv_buffer(res.data(), res.size());
+
+      auto frame = net::Buffer::static_move_upstream<Link_proto::Frame>(std::move(buf_ptr));
+      Link::receive(std::move(frame));
 
       // Requeue a new buffer
       add_receive_buffer();
@@ -439,13 +441,13 @@ void VirtioNet::transmit(net::Packet_ptr pckt) {
   }
 }
 
-void VirtioNet::enqueue(net::Packet* pckt) {
+void VirtioNet::enqueue(net::Buffer* buffer) {
 
   // This setup requires all tokens to be pre-chained like in SanOS
   Token token1 {{(uint8_t*) &empty_header, sizeof(virtio_net_hdr)},
       Token::OUT };
 
-  Token token2{ { pckt->buffer(), pckt->size() }, Token::OUT };
+  Token token2{ { buffer->buffer(), buffer->size() }, Token::OUT };
 
   std::array<Token, 2> tokens {{ token1, token2 }};
 
@@ -454,7 +456,7 @@ void VirtioNet::enqueue(net::Packet* pckt) {
 
   // have to release the packet data because virtio owns it now
   // but to do that the packet has to be unique here
-  tx_ringq.push_back((uint8_t*) pckt);
+  tx_ringq.push_back((uint8_t*) buffer);
 }
 
 void VirtioNet::begin_deferred_kick()

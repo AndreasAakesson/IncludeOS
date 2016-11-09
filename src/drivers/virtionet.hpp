@@ -115,7 +115,7 @@
 class VirtioNet : Virtio, public net::Link_layer<net::Ethernet> {
 public:
   using Link          = net::Link_layer<net::Ethernet>;
-  using Link_protocol = Link::Protocol;
+  using Link_proto    = Link::Protocol;
 
   static std::unique_ptr<Nic> new_instance(hw::PCI_Device& d)
   { return std::make_unique<VirtioNet>(d); }
@@ -218,7 +218,7 @@ private:
   void add_to_tx_buffer(net::Packet_ptr pckt);
 
   /** Add packet chain to virtio queue */
-  void enqueue(net::Packet* pckt);
+  void enqueue(net::Buffer*);
 
   /** Handle device IRQ.
       Will look for config changes and service RX/TX queues as necessary.*/
@@ -234,7 +234,7 @@ private:
 
 
 
-  std::unique_ptr<net::Packet> recv_packet(uint8_t* data, uint16_t sz);
+  net::Buffer::ptr recv_buffer(uint8_t* data, uint16_t sz);
   std::deque<uint8_t*> tx_ringq;
 
   void begin_deferred_kick();
