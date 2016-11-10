@@ -39,6 +39,9 @@ namespace net {
     using Packet_ptr = std::unique_ptr<PacketUDP, std::default_delete<net::Packet>>;
     using Stack  = IP4::Stack;
 
+    using downstream  = IP4::downstream;
+    using upstream    = IP4::upstream;
+
     typedef delegate<void()> sendto_handler;
 
     // write buffer for sendq
@@ -95,11 +98,11 @@ namespace net {
     { return stack_.ip_addr(); }
 
     /** Input from network layer */
-    void bottom(net::Packet_ptr);
+    void receive(ip4::Packet::ptr);
 
     /** Delegate output to network layer */
-    void set_network_out(downstream del)
-    { network_layer_out_ = del; }
+    void set_network_downstream(downstream del)
+    { network_downstream_ = del; }
 
     /** Send UDP datagram from source ip/port to destination ip/port.
 
@@ -155,9 +158,8 @@ namespace net {
     };
 
   private:
-
-    downstream  network_layer_out_;
     Stack&      stack_;
+    downstream  network_downstream_;
     std::map<port_t, UDPSocket> ports_;
     port_t      current_port_ {1024};
 

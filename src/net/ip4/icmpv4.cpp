@@ -15,9 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "../../api/net/ip4/icmpv4.hpp"
-
-#include <os>
+#include <net/ip4/icmpv4.hpp>
 #include <net/inet_common.hpp>
 #include <net/ip4/packet.hpp>
 #include <net/util.hpp>
@@ -28,7 +26,7 @@ namespace net {
     inet_{inet}
 {}
 
-  void ICMPv4::bottom(Packet_ptr pckt) {
+  void ICMPv4::receive(ip4::Packet::ptr pckt) {
     if (pckt->size() < sizeof(full_header)) // Drop if not a full header
       return;
 
@@ -82,10 +80,10 @@ namespace net {
     hdr->checksum = net::checksum(reinterpret_cast<uint16_t*>(hdr),
                                   size - sizeof(full_header) + sizeof(icmp_header));
 
-    network_layer_out_(std::move(ip4_pckt));
+    network_downstream_(std::move(ip4_pckt));
   }
 
-  void icmp_default_out(Packet_ptr) {
+  void icmp_default_out(ip4::Packet::ptr) {
     debug("<ICMP IGNORE> No handler. DROP!\n");
   }
 

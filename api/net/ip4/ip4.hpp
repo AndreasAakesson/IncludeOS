@@ -39,7 +39,8 @@ namespace net {
     using Packet    = ip4::Packet;
     using proto     = ip4::Proto;
 
-    using upstream = delegate<void(ip4::Packet::ptr)>;
+    using upstream    = upstream_spec<ip4::Packet>;
+    using downstream  = upstream;
 
     using ip_header = ip4::Header; // temp
     using full_header = ip4::Full_header; // temp
@@ -86,7 +87,7 @@ namespace net {
      *
      *  Source IP *can* be set - if it's not, IP4 will set it
      */
-    void transmit(Packet_ptr);
+    void transmit(ip4::Packet::ptr);
 
     /** Compute the IP4 header checksum */
     uint16_t checksum(ip4::Header*);

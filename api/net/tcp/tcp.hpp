@@ -45,7 +45,8 @@ namespace net {
     friend class tcp::Connection;
     friend class tcp::Listener;
 
-    using upstream        = upstream_spec<ip4::Packet>;
+    using upstream        = IP4::upstream;
+    using downstream      = upstream;
 
   public:
     /////// TCP Stuff - Relevant to the protocol /////
@@ -96,13 +97,13 @@ namespace net {
     /*
       Receive packet from network layer (IP).
     */
-    void bottom(ip4::Packet::ptr);
+    void receive(ip4::Packet::ptr);
 
     /*
       Delegate output to network layer
     */
-    void set_network_out(downstream del)
-    { _network_layer_out = del; }
+    void set_network_downstream(downstream del)
+    { network_downstream_ = del; }
 
     /*
       Compute the TCP checksum
@@ -181,7 +182,7 @@ namespace net {
     Listeners listeners_;
     Connections connections_;
 
-    downstream _network_layer_out;
+    downstream network_downstream_;
 
     std::deque<tcp::Connection_ptr> writeq;
 

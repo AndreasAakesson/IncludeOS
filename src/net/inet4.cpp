@@ -21,9 +21,9 @@ Inet4::Inet4(hw::Nic& nic)
   /** Upstream delegates */
   auto arp_bottom(upstream{arp_, &Arp::bottom});
   auto ip4_bottom(IP4::upstream{ip4_, &IP4::bottom});
-  auto icmp4_bottom(upstream{icmp_, &ICMPv4::bottom});
-  auto udp4_bottom(upstream{udp_, &UDP::bottom});
-  auto tcp_bottom(TCP::upstream{tcp_, &TCP::bottom});
+  auto icmp4_bottom(IP4::upstream{icmp_, &ICMPv4::receive});
+  auto udp4_bottom(IP4::upstream{udp_, &UDP::receive});
+  auto tcp_bottom(IP4::upstream{tcp_, &TCP::receive});
 
   /** Upstream wiring  */
   // Packets available
@@ -47,18 +47,18 @@ Inet4::Inet4(hw::Nic& nic)
   /** Downstream delegates */
   auto link_top(nic_.create_link_downstream());
   auto arp_top(downstream{arp_, &Arp::transmit});
-  auto ip4_top(downstream{ip4_, &IP4::transmit});
+  auto ip4_top(IP4::downstream{ip4_, &IP4::transmit});
 
   /** Downstream wiring. */
 
   // ICMP -> IP4
-  icmp_.set_network_out(ip4_top);
+  icmp_.set_network_downstream(ip4_top);
 
   // UDP4 -> IP4
-  udp_.set_network_out(ip4_top);
+  udp_.set_network_downstream(ip4_top);
 
   // TCP -> IP4
-  tcp_.set_network_out(ip4_top);
+  tcp_.set_network_downstream(ip4_top);
 
   // IP4 -> Arp
   ip4_.set_linklayer_out(arp_top);

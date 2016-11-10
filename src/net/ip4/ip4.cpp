@@ -86,10 +86,9 @@ namespace net {
     return net::checksum(reinterpret_cast<uint16_t*>(hdr), sizeof(ip4::Header));
   }
 
-  void IP4::transmit(Packet_ptr pckt) {
-    assert(pckt->size() > sizeof(IP4::full_header));
+  void IP4::transmit(ip4::Packet::ptr ip4_pckt) {
+    assert(ip4_pckt->size() > sizeof(IP4::full_header));
 
-    auto ip4_pckt = static_unique_ptr_cast<ip4::Packet>(std::move(pckt));
     ip4_pckt->make_flight_ready();
 
     IP4::ip_header& hdr = ip4_pckt->ip_header();

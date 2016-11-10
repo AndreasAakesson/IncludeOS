@@ -24,15 +24,15 @@
 namespace net {
 
 UDP::UDP(Stack& inet)
-  : stack_(inet)
+  : stack_(inet),
+    network_downstream_([] (ip4::Packet::ptr) {})
 {
-  network_layer_out_ = [] (net::Packet_ptr) {};
   inet.on_transmit_queue_available({this, &UDP::process_sendq});
 }
 
-void UDP::bottom(net::Packet_ptr pckt)
+void UDP::receive(ip4::Packet::ptr pckt)
 {
-  auto udp = static_unique_ptr_cast<PacketUDP>(std::move(pckt));
+  auto udp = ip4::Packet::static_move_upstream<PacketUDP>(std::move(pckt));
 
   debug("\t Source port: %i, Dest. Port: %i Length: %i\n",
         udp->src_port(), udp->dst_port(), udp->length());
@@ -99,7 +99,7 @@ void UDP::transmit(UDP::Packet_ptr udp)
   assert(udp->length() >= sizeof(udp_header));
   assert(static_cast<IP4::proto>(udp->protocol()) == IP4::proto::IP4_UDP);
 
-  network_layer_out_(std::move(udp));
+  network_downstream_(std::move(udp));
 }
 
 void UDP::flush()

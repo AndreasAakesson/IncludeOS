@@ -23,11 +23,13 @@
 
 namespace net {
 
-  void icmp_default_out(Packet_ptr);
+  void icmp_default_out(ip4::Packet::ptr);
 
   class ICMPv4 {
   public:
     using Stack = IP4::Stack;
+
+    using downstream  = upstream_spec<ip4::Packet>;
     // Initialize
     ICMPv4(Stack&);
 
@@ -50,15 +52,15 @@ namespace net {
     }__attribute__((packed));
 
     // Input from network layer
-    void bottom(Packet_ptr);
+    void receive(ip4::Packet::ptr);
 
     // Delegate output to network layer
-    inline void set_network_out(downstream s)
-    { network_layer_out_ = s;  };
+    void set_network_downstream(downstream s)
+    { network_downstream_ = s;  };
 
   private:
     Stack& inet_;
-    downstream            network_layer_out_ {icmp_default_out};
+    downstream            network_downstream_ {icmp_default_out};
 
     void ping_reply(full_header* full_hdr, uint16_t size);
   }; //< class ICMPv4
