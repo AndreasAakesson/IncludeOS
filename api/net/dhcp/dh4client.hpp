@@ -20,14 +20,12 @@
 #define NET_DHCP_DH4CLIENT_HPP
 
 #include <timers>
-#include "../packet.hpp"
 #include <net/ip4/ip4.hpp>
 #include <net/inet.hpp>
+#include <net/udp/socket.hpp>
 
 namespace net
 {
-  class UDPSocket;
-
   class DHClient
   {
   public:
@@ -51,8 +49,8 @@ namespace net
     { this->console_spam = !sil; }
 
   private:
-    void offer(UDPSocket&, const char* data, size_t len);
-    void request(UDPSocket&);   // --> acknowledge
+    void offer(udp::Socket&, const char* data, size_t len);
+    void request(udp::Socket&);   // --> acknowledge
     void acknowledge(const char* data, size_t len);
 
     Stack& stack;

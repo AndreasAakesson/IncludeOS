@@ -57,7 +57,7 @@ namespace net {
 
     virtual constexpr uint16_t MTU() const = 0;
 
-    virtual Packet_ptr create_packet(size_t size) = 0;
+    virtual Buffer::ptr create_packet(size_t size) = 0;
 
     virtual void resolve(const std::string& hostname, resolve_func<IPV> func) = 0;
 

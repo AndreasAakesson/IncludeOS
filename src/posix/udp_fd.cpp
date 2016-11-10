@@ -28,8 +28,8 @@ size_t UDP_FD::max_buffer_msgs() const
   return (rcvbuf_ / net_stack().udp().max_datagram_size());
 }
 
-void UDP_FD::recv_to_buffer(net::UDPSocket::addr_t addr,
-  net::UDPSocket::port_t port, const char* buf, size_t len)
+void UDP_FD::recv_to_buffer(net::udp::addr_t addr,
+  net::udp::port_t port, const char* buf, size_t len)
 {
   // only recv to buffer if not full
   if(buffer_.size() < max_buffer_msgs()) {
@@ -210,7 +210,7 @@ ssize_t UDP_FD::recvfrom(void *__restrict__ buffer, size_t len, int flags,
     this->sock->on_read(
     [&bytes, &done, this,
       buffer, len, flags, address, address_len]
-    (net::UDPSocket::addr_t addr, net::UDPSocket::port_t port,
+    (net::udp::addr_t addr, net::udp::port_t port,
       const char* data, size_t data_len)
     {
       // if this already been called once while blocking, buffer

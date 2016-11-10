@@ -25,7 +25,7 @@
 #include "ethernet/ethernet.hpp"
 #include "ip4/arp.hpp"
 #include "ip4/ip4.hpp"
-#include "ip4/udp.hpp"
+#include "udp/udp.hpp"
 #include "ip4/icmpv4.hpp"
 #include "dns/client.hpp"
 #include "tcp/tcp.hpp"
@@ -81,13 +81,13 @@ namespace net {
     /** Create a Packet, with a preallocated buffer.
         @param size : the "size" reported by the allocated packet.
     */
-    virtual Packet_ptr create_packet(size_t size) override {
+    virtual Buffer::ptr create_packet(size_t size) override {
       // get buffer (as packet + data)
-      auto* ptr = (Packet*) bufstore_.get_buffer();
+      auto* ptr = (Buffer*) bufstore_.get_buffer();
       // place packet at front of buffer
-      new (ptr) Packet(nic_.bufsize(), size, &bufstore_);
+      new (ptr) Buffer(nic_.bufsize(), size, &bufstore_);
       // regular shared_ptr that calls delete on Packet
-      return Packet_ptr(ptr);
+      return Buffer::ptr(ptr);
     }
 
     /** MTU retreived from Nic on construction */

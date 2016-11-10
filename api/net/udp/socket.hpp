@@ -1,6 +1,6 @@
 // This file is a part of the IncludeOS unikernel - www.includeos.org
 //
-// Copyright 2015 Oslo and Akershus University College of Applied Sciences
+// Copyright 2015-2016 Oslo and Akershus University College of Applied Sciences
 // and Alfred Bratterud
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,76 +16,79 @@
 // limitations under the License.
 
 #pragma once
-#ifndef NET_IP4_UDP_SOCKET_HPP
-#define NET_IP4_UDP_SOCKET_HPP
-#include "udp.hpp"
+
+#ifndef NET_UDP_SOCKET_HPP
+#define NET_UDP_SOCKET_HPP
+
+#include "datagram.hpp"
 #include <string>
 
 namespace net
 {
-  class UDPSocket
-  {
-  public:
-    typedef UDP::port_t port_t;
-    typedef IP4::addr addr_t;
-    typedef IP4::addr multicast_group_addr;
+  class UDP;
+  namespace udp {
 
-    typedef delegate<void(addr_t, port_t, const char*, size_t)> recvfrom_handler;
-    typedef UDP::sendto_handler sendto_handler;
-
-    // constructors
-    UDPSocket(UDP&, port_t port);
-    UDPSocket(const UDPSocket&) = delete;
-    // ^ DON'T USE THESE. We could create our own allocators just to prevent
-    // you from creating sockets, but then everyone is wasting time.
-    // These are public to allow us to use emplace(...).
-    // Use Stack.udp().bind(port) to get a valid Socket<UDP> reference.
-
-    // functions
-    void on_read(recvfrom_handler callback)
+    class Socket
     {
-      on_read_handler = callback;
-    }
-    void sendto(addr_t destIP, port_t port,
-                const void* buffer, size_t length,
-                sendto_handler cb = [] {});
-    void bcast(addr_t srcIP, port_t port,
-               const void* buffer, size_t length,
-               sendto_handler cb = [] {});
-    void close();
+    public:
+      using multicast_group_addr  = addr_t;
+      using recvfrom_handler      = delegate<void(addr_t, port_t, const char*, size_t)>;
+      using sendto_handler        = delegate<void()>;
 
-    void join(multicast_group_addr);
-    void leave(multicast_group_addr);
+      // constructors
+      Socket(UDP&, port_t port);
+      Socket(const Socket&) = delete;
+      // ^ DON'T USE THESE. We could create our own allocators just to prevent
+      // you from creating sockets, but then everyone is wasting time.
+      // These are public to allow us to use emplace(...).
+      // Use Stack.udp().bind(port) to get a valid Socket<UDP> reference.
 
-    // stuff
-    addr_t local_addr() const
-    {
-      return udp_.local_ip();
-    }
-    port_t local_port() const
-    {
-      return l_port;
-    }
+      // functions
+      void on_read(recvfrom_handler callback)
+      {
+        on_read_handler = callback;
+      }
+      void sendto(addr_t destIP, port_t port,
+                  const void* buffer, size_t length,
+                  sendto_handler cb = [] {});
+      void bcast(addr_t srcIP, port_t port,
+                 const void* buffer, size_t length,
+                 sendto_handler cb = [] {});
+      void close();
 
-    UDP& udp(){
-      return udp_;
-    }
+      void join(multicast_group_addr);
+      void leave(multicast_group_addr);
 
-  private:
-    void packet_init(UDP::Packet_ptr, addr_t, addr_t, port_t, uint16_t);
-    void internal_read(UDP::Packet_ptr);
+      // stuff
+      addr_t local_addr() const;
 
-    UDP& udp_;
-    port_t l_port;
-    recvfrom_handler on_read_handler =
-      [] (addr_t, port_t, const char*, size_t) {};
+      port_t local_port() const
+      {
+        return l_port;
+      }
 
-    bool reuse_addr;
-    bool loopback; // true means multicast data is looped back to sender
+      UDP& udp()
+      {
+        return udp_;
+      }
 
-    friend class UDP;
-    friend class std::allocator<UDPSocket>;
-  };
-}
+    private:
+      void packet_init(Datagram&, addr_t, addr_t, port_t, uint16_t);
+      void internal_read(Datagram::ptr);
+
+      UDP& udp_;
+      port_t l_port;
+      recvfrom_handler on_read_handler =
+        [] (addr_t, port_t, const char*, size_t) {};
+
+      bool reuse_addr;
+      bool loopback; // true means multicast data is looped back to sender
+
+      friend class ::net::UDP;
+      friend class std::allocator<udp::Socket>;
+    };
+
+  } // < namespace udp
+} // < namespace net
 
 #endif

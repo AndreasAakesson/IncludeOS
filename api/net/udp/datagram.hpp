@@ -1,6 +1,6 @@
 // This file is a part of the IncludeOS unikernel - www.includeos.org
 //
-// Copyright 2015 Oslo and Akershus University College of Applied Sciences
+// Copyright 2015-2016 Oslo and Akershus University College of Applied Sciences
 // and Alfred Bratterud
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,22 +17,26 @@
 
 #pragma once
 
-#include "udp.hpp"
-#include "packet.hpp"
-#include <cassert>
+#ifndef NET_UDP_DATAGRAM_HPP
+#define NET_UDP_DATAGRAM_HPP
 
-namespace net
-{
-  class PacketUDP : public ip4::Packet
+#include <net/ip4/packet.hpp>
+#include "header.hpp"
+
+namespace net {
+ namespace udp {
+
+  class Datagram : public ip4::Packet
   {
   public:
+    using ptr = bufptr<Datagram>;
 
-    UDP::udp_header& header() const
+    Header& header() const
     {
-      return ((UDP::full_header*) buffer())->udp_hdr;
+      return ((full_header*) buffer())->udp_hdr;
     }
 
-    static const size_t HEADERS_SIZE = sizeof(UDP::full_header);
+    static const size_t HEADERS_SIZE = sizeof(full_header);
 
     //! initializes to a default, empty UDP packet, given
     //! a valid MTU-sized buffer
@@ -47,15 +51,15 @@ namespace net
       // zero the optional checksum
       header().checksum = 0;
       // set UDP payload location (!?)
-      set_payload(buffer() + sizeof(UDP::full_header));
+      set_payload(buffer() + sizeof(full_header));
       set_protocol(ip4::Proto::IP4_UDP);
     }
 
-    UDP::port_t src_port() const
+    port_t src_port() const
     {
       return htons(header().sport);
     }
-    UDP::port_t dst_port() const
+    port_t dst_port() const
     {
       return htons(header().dport);
     }
@@ -66,21 +70,21 @@ namespace net
     }
     uint16_t data_length() const
     {
-      return length() - sizeof(UDP::udp_header);
+      return length() - sizeof(Header);
     }
     inline char* data()
     {
-      return (char*) (buffer() + sizeof(UDP::full_header));
+      return (char*) (buffer() + sizeof(full_header));
     }
 
     // sets the correct length for all the protocols up to IP4
     void set_length(uint16_t newlen)
     {
       // new total UDPv6 payload length
-      header().length = htons(sizeof(UDP::udp_header) + newlen);
+      header().length = htons(sizeof(Header) + newlen);
 
       // new total packet length
-      set_size( sizeof(UDP::full_header) + newlen );
+      set_size( sizeof(full_header) + newlen );
     }
 
     // generates a new checksum and sets it for this UDP packet
@@ -100,4 +104,8 @@ namespace net
       return total;
     }
   };
+ }
+
 }
+
+#endif

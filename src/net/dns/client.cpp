@@ -17,7 +17,7 @@
 
 #include <net/dns/client.hpp>
 
-#include <net/ip4/udp.hpp>
+#include <net/udp/udp.hpp>
 #include <net/dns/dns.hpp>
 
 namespace net
@@ -43,7 +43,7 @@ namespace net
     {
       // original request ID = this->id;
       request.parseResponse(data);
-      
+
       // fire onResolve event
       func(request.getFirstIP4());
     });

@@ -278,7 +278,7 @@ namespace net
     return opt;
   }
 
-  void DHClient::offer(UDPSocket& sock, const char* data, size_t)
+  void DHClient::offer(udp::Socket& sock, const char* data, size_t)
   {
     const dhcp_packet_t* dhcp = (const dhcp_packet_t*) data;
 
@@ -361,7 +361,7 @@ namespace net
     this->request(sock);
   }
 
-  void DHClient::request(UDPSocket& sock)
+  void DHClient::request(udp::Socket& sock)
   {
     // form a response
     const size_t packetlen = sizeof(dhcp_packet_t);

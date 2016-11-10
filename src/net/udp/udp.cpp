@@ -17,7 +17,7 @@
 
 #define DEBUG
 #include <common>
-#include <net/ip4/udp.hpp>
+#include <net/udp/udp.hpp>
 #include <net/util.hpp>
 #include <memory>
 
@@ -32,7 +32,7 @@ UDP::UDP(Stack& inet)
 
 void UDP::receive(ip4::Packet::ptr pckt)
 {
-  auto udp = ip4::Packet::static_move_upstream<PacketUDP>(std::move(pckt));
+  auto udp = ip4::Packet::static_move_upstream<udp::Datagram>(std::move(pckt));
 
   debug("\t Source port: %i, Dest. Port: %i Length: %i\n",
         udp->src_port(), udp->dst_port(), udp->length());
@@ -46,7 +46,7 @@ void UDP::receive(ip4::Packet::ptr pckt)
   debug("<UDP> Nobody's listening to this port. Drop!\n");
 }
 
-UDPSocket& UDP::bind(UDP::port_t port)
+udp::Socket& UDP::bind(UDP::port_t port)
 {
   /// bind(0) == bind()
   if (port == 0) return bind();
@@ -65,7 +65,7 @@ UDPSocket& UDP::bind(UDP::port_t port)
   return it->second;
 }
 
-UDPSocket& UDP::bind()
+udp::Socket& UDP::bind()
 {
   if (UNLIKELY(ports_.size() >= 0xfc00))
       throw std::runtime_error("UPD Socket: All ports taken!");
@@ -89,14 +89,14 @@ void UDP::close(UDP::port_t port)
     ports_.erase(port);
 }
 
-void UDP::transmit(UDP::Packet_ptr udp)
+void UDP::transmit(udp::Datagram::ptr udp)
 {
   debug2("<UDP> Transmitting %i bytes (seg=%i) from %s to %s:%i\n",
          udp->length(), udp->ip4_segment_size(),
          udp->src().str().c_str(),
          udp->dst().str().c_str(), udp->dst_port());
 
-  assert(udp->length() >= sizeof(udp_header));
+  assert(udp->length() >= sizeof(udp::Header));
   assert(static_cast<IP4::proto>(udp->protocol()) == IP4::proto::IP4_UDP);
 
   network_downstream_(std::move(udp));
@@ -158,7 +158,7 @@ void UDP::WriteBuffer::write()
 {
 
   // the bytes remaining to be written
-  UDP::Packet_ptr chain_head{};
+  udp::Datagram::ptr chain_head{};
 
   debug("<UDP> %i bytes to write, need %i packets \n",
          remaining(), remaining() / udp.max_datagram_size() + (remaining() % udp.max_datagram_size() ? 1 : 0));
@@ -171,11 +171,11 @@ void UDP::WriteBuffer::write()
     // create some packet p (and convert it to PacketUDP)
     auto p = udp.stack().create_packet(0);
     // fill buffer (at payload position)
-    memcpy(p->buffer() + PacketUDP::HEADERS_SIZE,
+    memcpy(p->buffer() + udp::Datagram::HEADERS_SIZE,
            buf.get() + this->offset, total);
 
     // initialize packet with several infos
-    auto p2 = static_unique_ptr_cast<PacketUDP>(std::move(p));
+    auto p2 = static_unique_ptr_cast<udp::Datagram>(std::move(p));
 
     p2->init();
     p2->header().sport = htons(l_port);

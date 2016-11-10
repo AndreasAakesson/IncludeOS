@@ -1,6 +1,6 @@
 // This file is a part of the IncludeOS unikernel - www.includeos.org
 //
-// Copyright 2015 Oslo and Akershus University College of Applied Sciences
+// Copyright 2015-2016 Oslo and Akershus University College of Applied Sciences
 // and Alfred Bratterud
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,34 +15,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NET_IP4_UDP_HPP
-#define NET_IP4_UDP_HPP
+#pragma once
 
+#ifndef NET_UDP_HPP
+#define NET_UDP_HPP
+
+#include "datagram.hpp"
+#include "socket.hpp"
 #include <deque>
 #include <map>
-#include "../inet.hpp"
-#include "ip4.hpp"
+#include <net/ip4/ip4.hpp>
 #include <cstring>
-#include <net/packet.hpp>
 
 namespace net {
-
-  class PacketUDP;
-  class UDPSocket;
 
   /** Basic UDP support. @todo Implement UDP sockets.  */
   class UDP {
   public:
-    using addr_t = IP4::addr;
-    using port_t = uint16_t;
+    using addr_t      = udp::addr_t;
+    using port_t      = udp::port_t;
 
-    using Packet_ptr = std::unique_ptr<PacketUDP, std::default_delete<net::Packet>>;
-    using Stack  = IP4::Stack;
+    using Stack       = IP4::Stack;
 
     using downstream  = IP4::downstream;
     using upstream    = IP4::upstream;
 
-    typedef delegate<void()> sendto_handler;
+    using full_header = udp::full_header; // temp
+
+    using sendto_handler = udp::Socket::sendto_handler;
 
     // write buffer for sendq
     struct WriteBuffer
@@ -78,20 +78,6 @@ namespace net {
       addr_t d_addr;
     };
 
-    /** UDP header */
-    struct udp_header {
-      port_t   sport;
-      port_t   dport;
-      uint16_t length;
-      uint16_t checksum;
-    };
-
-    /** Full UDP Header with all sub-headers */
-    struct full_header {
-      IP4::full_header full_hdr;
-      udp_header       udp_hdr;
-    }__attribute__((packed));
-
     ////////////////////////////////////////////
 
     addr_t local_ip() const
@@ -110,13 +96,13 @@ namespace net {
         @param sport Local port
         @param dip   Remote IP-address
         @param dport Remote port   */
-    void transmit(UDP::Packet_ptr udp);
+    void transmit(udp::Datagram::ptr udp);
 
     //! @param port local port
-    UDPSocket& bind(port_t port);
+    udp::Socket& bind(port_t port);
 
     //! returns a new UDP socket bound to a random port
-    UDPSocket& bind();
+    udp::Socket& bind();
 
     bool is_bound(port_t port);
 
@@ -138,7 +124,7 @@ namespace net {
     void process_sendq(size_t num);
 
     inline constexpr uint16_t max_datagram_size() noexcept {
-      return stack().ip_obj().MDDS() - sizeof(udp_header);
+      return stack().ip_obj().MDDS() - sizeof(udp::Header);
     }
 
     class Port_in_use_exception : public std::exception {
@@ -160,17 +146,14 @@ namespace net {
   private:
     Stack&      stack_;
     downstream  network_downstream_;
-    std::map<port_t, UDPSocket> ports_;
+    std::map<port_t, udp::Socket> ports_;
     port_t      current_port_ {1024};
 
     // the async send queue
     std::deque<WriteBuffer> sendq;
-    friend class net::UDPSocket;
+    friend class udp::Socket;
   }; //< class UDP
 
 } //< namespace net
-
-#include "packet_udp.hpp"
-#include "udp_socket.hpp"
 
 #endif

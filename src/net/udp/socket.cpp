@@ -1,6 +1,6 @@
 // This file is a part of the IncludeOS unikernel - www.includeos.org
 //
-// Copyright 2015 Oslo and Akershus University College of Applied Sciences
+// Copyright 2015-2016 Oslo and Akershus University College of Applied Sciences
 // and Alfred Bratterud
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <net/ip4/udp_socket.hpp>
+#include <net/udp/socket.hpp>
+#include <net/udp/udp.hpp>
 #include <memory>
 
 #define likely(x)       __builtin_expect(!!(x), 1)
@@ -23,34 +24,41 @@
 
 namespace net
 {
-  UDPSocket::UDPSocket(UDP& udp_instance, port_t port)
+namespace udp
+{
+  Socket::Socket(UDP& udp_instance, port_t port)
     : udp_(udp_instance), l_port(port)
   {}
 
-  void UDPSocket::packet_init(
-      UDP::Packet_ptr p,
+  addr_t Socket::local_addr() const
+  {
+    return udp_.local_ip();
+  }
+
+  void Socket::packet_init(
+      Datagram& d,
       addr_t srcIP,
       addr_t destIP,
       port_t port,
       uint16_t length)
   {
-    p->init();
-    p->header().sport = htons(this->l_port);
-    p->header().dport = htons(port);
-    p->set_src(srcIP);
-    p->set_dst(destIP);
-    p->set_length(length);
+    d.init();
+    d.header().sport = htons(this->l_port);
+    d.header().dport = htons(port);
+    d.set_src(srcIP);
+    d.set_dst(destIP);
+    d.set_length(length);
 
-    assert(p->data_length() == length);
+    assert(d.data_length() == length);
   }
 
-  void UDPSocket::internal_read(UDP::Packet_ptr udp)
+  void Socket::internal_read(Datagram::ptr udp)
   {
     on_read_handler(
         udp->src(), udp->src_port(), udp->data(), udp->data_length());
   }
 
-  void UDPSocket::sendto(
+  void Socket::sendto(
      addr_t destIP,
      port_t port,
      const void* buffer,
@@ -65,7 +73,7 @@ namespace net
     // UDP packets are meant to be sent immediately, so try flushing
     udp_.flush();
   }
-  void UDPSocket::bcast(
+  void Socket::bcast(
       addr_t srcIP,
       port_t port,
       const void* buffer,
@@ -81,4 +89,5 @@ namespace net
     udp_.flush();
   }
 
+}
 }
