@@ -20,7 +20,7 @@
 #define NET_TCP_COMMON_HPP
 
 #include <net/ip4/addr.hpp>
-#include <net/packet.hpp>
+#include <net/buffer.hpp>
 
 namespace net {
   namespace tcp {
@@ -54,7 +54,7 @@ namespace net {
     { return buffer_t(new uint8_t[length], std::default_delete<uint8_t[]>()); }
 
     class Packet;
-    using Packet_ptr = std::unique_ptr<Packet>;
+    using Packet_ptr = std::unique_ptr<Packet, std::default_delete<Buffer>>;
 
     class Connection;
     using Connection_ptr = std::shared_ptr<Connection>;

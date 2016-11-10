@@ -23,7 +23,7 @@ Inet4::Inet4(hw::Nic& nic)
   auto ip4_bottom(IP4::upstream{ip4_, &IP4::bottom});
   auto icmp4_bottom(upstream{icmp_, &ICMPv4::bottom});
   auto udp4_bottom(upstream{udp_, &UDP::bottom});
-  auto tcp_bottom(upstream{tcp_, &TCP::bottom});
+  auto tcp_bottom(TCP::upstream{tcp_, &TCP::bottom});
 
   /** Upstream wiring  */
   // Packets available

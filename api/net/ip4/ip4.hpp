@@ -60,13 +60,13 @@ namespace net {
     void bottom(ip4::Packet::ptr);
 
     /** Upstream: Outputs to transport layer */
-    inline void set_icmp_handler(upstream s)
+    void set_icmp_handler(upstream s)
     { icmp_handler_ = s; }
 
-    inline void set_udp_handler(upstream s)
+    void set_udp_handler(upstream s)
     { udp_handler_ = s; }
 
-    inline void set_tcp_handler(upstream s)
+    void set_tcp_handler(upstream_spec<ip4::Packet> s)
     { tcp_handler_ = s; }
 
     /** Downstream: Delegate linklayer out */
@@ -115,7 +115,7 @@ namespace net {
     /** Upstream delegates */
     upstream icmp_handler_ {ignore_ip4_up};
     upstream udp_handler_  {ignore_ip4_up};
-    upstream tcp_handler_  {ignore_ip4_up};
+    upstream_spec<ip4::Packet> tcp_handler_;
 
     /** Packet forwarding  */
     Stack::Forward_delg forward_packet_;

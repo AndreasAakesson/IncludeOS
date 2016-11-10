@@ -770,9 +770,9 @@ private:
   /*
     Creates a new outgoing packet with the current TCB values and options.
   */
-  Packet_ptr create_outgoing_packet();
+  Packet::ptr create_outgoing_packet();
 
-  Packet_ptr outgoing_packet()
+  Packet::ptr outgoing_packet()
   { return create_outgoing_packet(); }
 
   /*

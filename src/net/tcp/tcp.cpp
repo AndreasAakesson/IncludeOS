@@ -188,12 +188,15 @@ uint16_t TCP::checksum(const tcp::Packet& packet)
   return ~sum.whole;
 }
 
-void TCP::bottom(net::Packet_ptr packet_ptr) {
+void TCP::bottom(ip4::Packet::ptr ip_packet) {
   // Stat increment packets received
   packets_rx_++;
 
+  const auto src_addr = ip_packet->src();
+  //const auto dst_addr = ip_packet->dst();
+
   // Translate into a TCP::Packet. This will be used inside the TCP-scope.
-  auto packet = static_unique_ptr_cast<net::tcp::Packet>(std::move(packet_ptr));
+  auto packet = ip4::Packet::static_move_upstream<tcp::Packet>(std::move(ip_packet));
   debug2("<TCP::bottom> TCP Packet received - Source: %s, Destination: %s \n",
         packet->source().to_string().c_str(), packet->destination().to_string().c_str());
 
@@ -207,7 +210,7 @@ void TCP::bottom(net::Packet_ptr packet_ptr) {
     return;
   }
 
-  Connection::Tuple tuple { packet->dst_port(), packet->source() };
+  Connection::Tuple tuple { packet->dst_port(), { src_addr, packet->src_port() } };
 
   // Try to find the receiver
   auto conn_it = connections_.find(tuple);

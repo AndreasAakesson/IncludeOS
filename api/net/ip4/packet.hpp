@@ -111,6 +111,10 @@ namespace net {
       { ip_header().tot_len = htons(size() - sizeof(LinkLayer::header)); }
 
     private:
+      friend net::Buffer;
+
+      void upstream()
+      { set_payload(payload() + ip_header_length()); /*printf("<ip4::Packet> Payload += %u\n", ip_header_length());*/ }
 
     }; //< class Packet
 

@@ -130,7 +130,7 @@ namespace net
       static_assert(std::is_base_of<Parent, Derived>::value, "Derived network packet does not inherit base.");
       // Move payload upstream
       base->upstream();
-      auto* d = static_cast<Derived*>((Parent*)base.release());
+      auto* d = static_cast<Derived*>((Parent*)(base.release()));
       return bufptr<Derived>(d);
     }
 

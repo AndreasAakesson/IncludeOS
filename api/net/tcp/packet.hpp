@@ -42,6 +42,7 @@ namespace tcp {
 */
 class Packet : public ip4::Packet {
 public:
+  using ptr = bufptr<Packet>;
 
   inline Header& tcp_header() const
   { return *(Header*) ip_data(); }

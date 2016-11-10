@@ -384,7 +384,7 @@ Connection::~Connection() {
 }
 
 Packet_ptr Connection::create_outgoing_packet() {
-  auto packet = static_unique_ptr_cast<net::tcp::Packet>((host_.inet_).create_packet(0));
+  auto packet = Packet::static_move_upstream<tcp::Packet>((host_.inet_).create_packet(0));
   //auto packet = std::static_pointer_cast<TCP::Packet>(create_packet());
 
   packet->init();

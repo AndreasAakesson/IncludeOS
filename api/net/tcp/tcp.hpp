@@ -45,6 +45,8 @@ namespace net {
     friend class tcp::Connection;
     friend class tcp::Listener;
 
+    using upstream        = upstream_spec<ip4::Packet>;
+
   public:
     /////// TCP Stuff - Relevant to the protocol /////
 
@@ -94,7 +96,7 @@ namespace net {
     /*
       Receive packet from network layer (IP).
     */
-    void bottom(net::Packet_ptr);
+    void bottom(ip4::Packet::ptr);
 
     /*
       Delegate output to network layer
