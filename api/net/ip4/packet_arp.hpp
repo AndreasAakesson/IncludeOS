@@ -20,11 +20,11 @@
 #define NET_IP4_PACKET_ARP
 
 #include "arp.hpp"
-#include <net/packet.hpp>
+#include <net/frame.hpp>
 
 namespace net
 {
-  class PacketArp : public Packet
+  class PacketArp : public net::Frame
   {
   public:
     Arp::header& header() const

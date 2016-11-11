@@ -55,10 +55,13 @@ namespace hw {
     virtual uint16_t MTU() const noexcept = 0;
 
     /** Implemented by the underlying (link) driver */
-    virtual net::downstream create_link_downstream() = 0;
+    virtual net::downstream_spec<net::Frame> create_link_downstream() = 0;
     virtual void set_ip4_upstream(net::upstream_spec<net::ip4::Packet> handler) = 0;
     virtual void set_ip6_upstream(net::upstream handler) = 0;
     virtual void set_arp_upstream(net::upstream handler) = 0;
+
+    /** @note: performance issues with virtual? */
+    virtual net::Frame::ptr create_frame() = 0;
 
     net::BufferStore& bufstore() noexcept
     { return bufstore_; }
@@ -100,6 +103,15 @@ namespace hw {
 
     net::transmit_avail_delg transmit_queue_available_event_ =
       [](auto) { assert(0 && "<NIC> Transmit queue available delegate is not set!"); };
+
+    auto create_buffer(size_t size)
+    {
+      // get buffer (as buffer + data)
+      auto* ptr = (net::Buffer*) bufstore_.get_buffer();
+      // place packet at front of buffer
+      new (ptr) net::Buffer(bufstore_.bufsize(), size, &bufstore_);
+      return net::Buffer::ptr(ptr);
+    }
 
   private:
     net::BufferStore bufstore_;

@@ -35,6 +35,8 @@ namespace net {
     using Network = IP4;
     /** Link protocol */
     using Link    = Ethernet;
+
+    using downstream = downstream_spec<net::Frame>;
   private:
     /** ARP cache expires after cache_exp_t_ seconds */
     static constexpr uint16_t cache_exp_t_ {60 * 60 * 12};

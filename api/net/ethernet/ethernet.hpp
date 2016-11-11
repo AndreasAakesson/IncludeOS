@@ -111,8 +111,10 @@ namespace net {
     static constexpr hw::Nic::Proto proto() noexcept
     { return hw::Nic::Proto::ETH; }
 
+    Frame::ptr create_frame(Buffer::ptr);
+
     /** Transmit data, with preallocated space for eth.header */
-    void transmit(Packet_ptr);
+    void transmit(net::Frame::ptr);
 
   private:
     const addr& mac_;
@@ -129,6 +131,8 @@ namespace net {
 
     /** Downstream OUTPUT connection */
     downstream physical_downstream_ = [](Packet_ptr){};
+
+    void init_frame(Frame&);
 
     /*
 

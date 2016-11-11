@@ -20,6 +20,7 @@
 
 #include <net/inet_common.hpp>
 #include <hw/mac_addr.hpp>
+#include <net/frame.hpp>
 
 namespace net {
 
@@ -58,6 +59,8 @@ namespace net {
     virtual constexpr uint16_t MTU() const = 0;
 
     virtual Buffer::ptr create_packet(size_t size) = 0;
+    virtual Frame::ptr  create_frame() = 0;
+    virtual typename IPV::Packet::ptr create_packet() = 0;
 
     virtual void resolve(const std::string& hostname, resolve_func<IPV> func) = 0;
 

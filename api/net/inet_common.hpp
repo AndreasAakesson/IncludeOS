@@ -32,7 +32,10 @@ namespace net {
   template<typename T = Buffer>
   using upstream_spec = delegate<void(std::unique_ptr<T, std::default_delete<Buffer>>)>;
   using upstream      = upstream_spec<>; // temp, TODO: only use upstream<T>
-  using downstream    = upstream;
+
+  template<typename T = Buffer>
+  using downstream_spec = upstream_spec<T>;
+  using downstream      = downstream_spec<>;
 
   // Delegate for signalling available buffers in device transmit queue
   using transmit_avail_delg = delegate<void(size_t)>;

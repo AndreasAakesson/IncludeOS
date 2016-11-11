@@ -7,6 +7,8 @@
 #include "header.hpp"
 
 namespace net {
+  class Ethernet;
+
   namespace ethernet {
 
     class Frame : public net::Frame {
@@ -25,6 +27,7 @@ namespace net {
     private:
       /** Give access to upstream/downstream */
       friend net::Buffer;
+      friend net::Ethernet;
 
       void upstream()
       { set_payload(payload() + header_len()); /*printf("<eth::Frame> Payload += %u\n", header_len());*/ }

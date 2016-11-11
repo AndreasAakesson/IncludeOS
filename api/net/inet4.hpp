@@ -86,9 +86,14 @@ namespace net {
       auto* ptr = (Buffer*) bufstore_.get_buffer();
       // place packet at front of buffer
       new (ptr) Buffer(nic_.bufsize(), size, &bufstore_);
-      // regular shared_ptr that calls delete on Packet
       return Buffer::ptr(ptr);
     }
+
+    virtual Frame::ptr create_frame() override
+    { return nic_.create_frame(); }
+
+    virtual IP4::Packet::ptr create_packet() override
+    { return nullptr; }
 
     /** MTU retreived from Nic on construction */
     virtual uint16_t MTU() const override

@@ -16,7 +16,7 @@ public:
 public:
   explicit Link_layer(Protocol&& protocol, uint32_t bufstore_sz, uint16_t bufsz);
 
-  downstream create_link_downstream() override
+  downstream_spec<net::Frame> create_link_downstream() override
   { return {link_, &Protocol::transmit}; }
 
   void set_ip4_upstream(upstream_spec<net::ip4::Packet> handler) override
@@ -30,6 +30,9 @@ public:
 
   hw::Nic::Proto proto() const override
   { return Protocol::proto(); }
+
+  net::Frame::ptr create_frame() override
+  { return link_.create_frame(create_buffer(0)); }
 
 protected:
   /** Called by the underlying physical driver inheriting the Link_layer */

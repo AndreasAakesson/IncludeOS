@@ -57,9 +57,9 @@ namespace net {
 {
 }
 
-  void Ethernet::transmit(net::Packet_ptr pckt)
+  void Ethernet::transmit(net::Frame::ptr frame)
   {
-    auto* hdr = reinterpret_cast<header*>(pckt->buffer());
+    auto* hdr = reinterpret_cast<header*>(frame->buffer());
 
     // Verify ethernet header
     Expects(hdr->dest.major != 0 || hdr->dest.minor !=0);
@@ -69,12 +69,12 @@ namespace net {
     hdr->src = mac_;
 
     debug2("<Ethernet OUT> Transmitting %i b, from %s -> %s. Type: %i\n",
-           pckt->size(), mac_.str().c_str(), hdr->dest.str().c_str(), hdr->type);
+           frame->size(), mac_.str().c_str(), hdr->dest.str().c_str(), hdr->type);
 
     // Stat increment packets transmitted
     packets_tx_++;
 
-    physical_downstream_(std::move(pckt));
+    physical_downstream_(std::move(frame));
   }
 
   void Ethernet::receive(Frame::ptr frame) {
@@ -133,6 +133,24 @@ namespace net {
 
     if(dropped)
       packets_dropped_++;
+  }
+
+  ethernet::Frame::ptr Ethernet::create_frame(Buffer::ptr buf)
+  {
+    auto frame = Frame::static_move_upstream<ethernet::Frame>(std::move(buf));
+
+    init_frame(*frame);
+
+    // I'm afraid this has to be done before being sent up.
+    frame->upstream();
+
+    return frame;
+  }
+
+  void Ethernet::init_frame(Frame& frame)
+  {
+    auto&& hdr = frame.header();
+    hdr.src = mac_;
   }
 
 } // namespace net
