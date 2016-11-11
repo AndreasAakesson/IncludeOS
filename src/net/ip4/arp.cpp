@@ -19,9 +19,6 @@
 #define DEBUG2 // Allow debugging
 
 #include <vector>
-
-#include <os>
-#include <net/inet4.hpp>
 #include <net/ip4/arp.hpp>
 #include <net/ip4/packet_arp.hpp>
 #include <statman>
@@ -149,13 +146,12 @@ namespace net {
     linklayer_out_(std::move(res));
   }
 
-  void Arp::transmit(Packet_ptr pckt) {
+  void Arp::transmit(ip4::Packet::ptr pckt) {
     assert(pckt->size());
 
     /** Get destination IP from IP header */
-    IP4::ip_header* iphdr = reinterpret_cast<IP4::ip_header*>(pckt->buffer()
-                                                              + sizeof(Ethernet::header));
-    IP4::addr sip = iphdr->saddr;
+    auto&& iphdr = pckt->ip_header();
+    IP4::addr sip = iphdr.saddr;
     IP4::addr dip = pckt->next_hop();
 
     debug2("<ARP -> physical> Transmitting %i bytes to %s\n",
@@ -163,7 +159,7 @@ namespace net {
 
     Ethernet::addr dest_mac;
 
-    if (iphdr->daddr == IP4::ADDR_BCAST) {
+    if (iphdr.daddr == IP4::ADDR_BCAST) {
       // When broadcasting our source IP should be either
       // our own IP or 0.0.0.0
 
@@ -212,7 +208,7 @@ namespace net {
     linklayer_out_(std::move(pckt));
   }
 
-  void Arp::await_resolution(Packet_ptr pckt, IP4::addr) {
+  void Arp::await_resolution(Network::Packet::ptr pckt, Network::addr) {
     auto queue =  waiting_packets_.find(pckt->next_hop());
 
     if (queue != waiting_packets_.end()) {
@@ -224,7 +220,7 @@ namespace net {
     }
   }
 
-  void Arp::arp_resolve(Packet_ptr pckt) {
+  void Arp::arp_resolve(Network::Packet::ptr pckt) {
     debug("<ARP RESOLVE> %s\n", pckt->next_hop().str().c_str());
     const auto next_hop = pckt->next_hop();
     await_resolution(std::move(pckt), next_hop);
@@ -242,7 +238,7 @@ namespace net {
     linklayer_out_(std::move(req));
   }
 
-  void Arp::hh_map(Packet_ptr pckt) {
+  void Arp::hh_map(Network::Packet::ptr pckt) {
     (void) pckt;
     debug("ARP-resolution using the HH-hack");
     /**

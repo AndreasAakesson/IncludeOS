@@ -19,9 +19,8 @@
 #ifndef NET_IP4_ARP_HPP
 #define NET_IP4_ARP_HPP
 
-#include <os>
+#include <kernel/os.hpp> // OS::uptime()
 #include <map>
-
 #include <delegate>
 #include "ip4.hpp"
 
@@ -32,19 +31,23 @@ namespace net {
   /** ARP manager, including an ARP-Cache. */
   class Arp {
     using Stack   = IP4::Stack;
+    /** Network/Internet protocol */
+    using Network = IP4;
+    /** Link protocol */
+    using Link    = Ethernet;
   private:
     /** ARP cache expires after cache_exp_t_ seconds */
     static constexpr uint16_t cache_exp_t_ {60 * 60 * 12};
 
     /** Cache entries are just MAC's and timestamps */
     struct cache_entry {
-      Ethernet::addr mac_;
-      uint64_t       timestamp_;
+      Link::addr  mac_;
+      uint64_t    timestamp_;
 
       /** Map needs empty constructor (we have no emplace yet) */
       cache_entry() noexcept = default;
 
-      cache_entry(Ethernet::addr mac) noexcept
+      cache_entry(Link::addr mac) noexcept
       : mac_(mac), timestamp_(OS::uptime()) {}
 
       cache_entry(const cache_entry& cpy) noexcept
@@ -53,15 +56,15 @@ namespace net {
       void update() noexcept { timestamp_ = OS::uptime(); }
     }; //< struct cache_entry
 
-    using Cache       = std::map<IP4::addr, cache_entry>;
-    using PacketQueue = std::map<IP4::addr, Packet_ptr>;
+    using Cache       = std::map<Network::addr, cache_entry>;
+    using PacketQueue = std::map<Network::addr, Network::Packet::ptr>;
   public:
     /**
      *  You can assign your own ARP-resolution delegate
      *
      *  We're doing this to keep the Hårek Haugerud mapping (HH_MAP)
      */
-    using Arp_resolver = delegate<void(Packet_ptr packet)>;
+    using Arp_resolver = delegate<void(Network::Packet::ptr packet)>;
 
     enum Opcode { H_request = 0x100, H_reply = 0x200 };
 
@@ -74,15 +77,15 @@ namespace net {
     explicit Arp(Stack&) noexcept;
 
     struct __attribute__((packed)) header {
-      Ethernet::header ethhdr;    // Ethernet header
+      Link::header     ethhdr;    // Ethernet header
       uint16_t         htype;     // Hardware type
       uint16_t         ptype;     // Protocol type
       uint16_t         hlen_plen; // Protocol address length
       uint16_t         opcode;    // Opcode
-      Ethernet::addr   shwaddr;   // Source mac
-      IP4::addr        sipaddr;   // Source ip
-      Ethernet::addr   dhwaddr;   // Target mac
-      IP4::addr        dipaddr;   // Target ip
+      Link::addr       shwaddr;   // Source mac
+      Network::addr    sipaddr;   // Source ip
+      Link::addr       dhwaddr;   // Target mac
+      Network::addr    dipaddr;   // Target ip
     };
 
     /** Handle incoming ARP packet. */
@@ -110,7 +113,7 @@ namespace net {
     { linklayer_out_ = link; }
 
     /** Downstream transmission. */
-    void transmit(Packet_ptr);
+    void transmit(ip4::Packet::ptr);
 
   private:
 
@@ -123,7 +126,7 @@ namespace net {
     Stack& inet_;
 
     /** Needs to know which mac address to put in header->swhaddr */
-    Ethernet::addr mac_;
+    Link::addr mac_;
 
     /** Outbound data goes through here */
     downstream linklayer_out_;
@@ -132,26 +135,26 @@ namespace net {
     Cache cache_;
 
     /** Cache IP resolution. */
-    void cache(IP4::addr, Ethernet::addr);
+    void cache(Network::addr, Link::addr);
 
     /** Check if an IP is cached and not expired */
-    bool is_valid_cached(IP4::addr);
+    bool is_valid_cached(Network::addr);
 
     /** ARP resolution. */
-    Ethernet::addr resolve(IP4::addr);
+    Link::addr resolve(Network::addr);
 
     void arp_respond(header* hdr_in);
 
     // two different ARP resolvers
-    void arp_resolve(Packet_ptr);
-    void hh_map(Packet_ptr);
+    void arp_resolve(Network::Packet::ptr);
+    void hh_map(Network::Packet::ptr);
 
     Arp_resolver arp_resolver_ = {this, &Arp::arp_resolve};
 
     PacketQueue waiting_packets_;
 
     /** Add a packet to waiting queue, to be sent when IP is resolved */
-    void await_resolution(Packet_ptr, IP4::addr);
+    void await_resolution(Network::Packet::ptr, Network::addr);
 
     /** Create a default initialized ARP-packet */
     Packet_ptr create_packet();

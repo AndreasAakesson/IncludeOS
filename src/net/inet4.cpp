@@ -46,7 +46,7 @@ Inet4::Inet4(hw::Nic& nic)
 
   /** Downstream delegates */
   auto link_top(nic_.create_link_downstream());
-  auto arp_top(downstream{arp_, &Arp::transmit});
+  auto arp_top(IP4::downstream{arp_, &Arp::transmit});
   auto ip4_top(IP4::downstream{ip4_, &IP4::transmit});
 
   /** Downstream wiring. */
