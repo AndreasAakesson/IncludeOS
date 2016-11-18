@@ -29,8 +29,6 @@ namespace net {
   public:
     using Stack = IP4::Stack;
 
-    using upstream    = IP4::downstream;
-    using downstream  = upstream;
     // Initialize
     ICMPv4(Stack&);
 
@@ -56,12 +54,12 @@ namespace net {
     void receive(ip4::Packet::ptr);
 
     // Delegate output to network layer
-    void set_network_downstream(downstream s)
+    void set_network_downstream(downstream<ip4::Packet> s)
     { network_downstream_ = s;  };
 
   private:
     Stack& inet_;
-    downstream            network_downstream_ {icmp_default_out};
+    downstream<ip4::Packet> network_downstream_ {icmp_default_out};
 
     void ping_reply(full_header* full_hdr, uint16_t size);
   }; //< class ICMPv4

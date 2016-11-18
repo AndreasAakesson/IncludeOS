@@ -44,7 +44,7 @@ namespace net {
     debug("<Ethernet upstream> Ignoring data (no real upstream)\n");
   }
 
-  Ethernet::Ethernet(downstream physical_downstream, const addr& mac) noexcept
+  Ethernet::Ethernet(downstream<> physical_downstream, const addr& mac) noexcept
   : mac_(mac),
     packets_rx_{Statman::get().create(Stat::UINT64, ".ethernet.packets_rx").get_uint64()},
     packets_tx_{Statman::get().create(Stat::UINT64, ".ethernet.packets_tx").get_uint64()},

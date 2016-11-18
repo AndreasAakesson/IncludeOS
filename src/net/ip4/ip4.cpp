@@ -37,7 +37,7 @@ namespace net {
   // gateway_.whole = (local_ip_.whole & netmask_.whole) | DEFAULT_GATEWAY;
 }
 
-  void IP4::bottom(net::Frame::ptr frame) {
+  void IP4::receive(net::Frame::ptr frame) {
     debug2("<IP4 handler> got the data.\n");
     // Cast to IP4 Packet - the frame already had its payload moved
     auto packet = Frame::static_cast_upstream<ip4::Packet>(std::move(frame));
@@ -66,14 +66,14 @@ namespace net {
     {
       case proto::IP4_ICMP:
         debug2("\t Type: ICMP\n");
-        icmp_handler_(std::move(packet));
+        icmp_upstream_(std::move(packet));
         break;
       case proto::IP4_UDP:
         debug2("\t Type: UDP\n");
-        udp_handler_(std::move(packet));
+        udp_upstream_(std::move(packet));
         break;
       case proto::IP4_TCP:
-        tcp_handler_(std::move(packet));
+        tcp_upstream_(std::move(packet));
         debug2("\t Type: TCP\n");
         break;
       default:
@@ -116,7 +116,7 @@ namespace net {
     // Stat increment packets transmitted
     packets_tx_++;
 
-    linklayer_out_(std::move(ip4_pckt));
+    link_downstream_(std::move(ip4_pckt));
   }
 
   // Empty handler for delegates initialization

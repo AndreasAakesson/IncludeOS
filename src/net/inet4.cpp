@@ -19,11 +19,11 @@ Inet4::Inet4(hw::Nic& nic)
   Ensures(sizeof(IP4::addr) == 4);
 
   /** Upstream delegates */
-  auto arp_bottom(upstream{arp_, &Arp::bottom});
-  auto ip4_bottom(IP4::upstream{ip4_, &IP4::bottom});
-  auto icmp4_bottom(ICMPv4::upstream{icmp_, &ICMPv4::receive});
-  auto udp4_bottom(UDP::upstream{udp_, &UDP::receive});
-  auto tcp_bottom(TCP::upstream{tcp_, &TCP::receive});
+  auto arp_bottom(upstream<Frame>{arp_, &Arp::receive});
+  auto ip4_bottom(upstream<Frame>{ip4_, &IP4::receive});
+  auto icmp4_bottom(upstream<ip4::Packet>{icmp_, &ICMPv4::receive});
+  auto udp4_bottom(upstream<ip4::Packet>{udp_, &UDP::receive});
+  auto tcp_bottom(upstream<ip4::Packet>{tcp_, &TCP::receive});
 
   /** Upstream wiring  */
   // Packets available
@@ -36,18 +36,18 @@ Inet4::Inet4(hw::Nic& nic)
   nic_.set_ip4_upstream(ip4_bottom);
 
   // IP4 -> ICMP
-  ip4_.set_icmp_handler(icmp4_bottom);
+  ip4_.set_icmp_upstream(icmp4_bottom);
 
   // IP4 -> UDP
-  ip4_.set_udp_handler(udp4_bottom);
+  ip4_.set_udp_upstream(udp4_bottom);
 
   // IP4 -> TCP
-  ip4_.set_tcp_handler(tcp_bottom);
+  ip4_.set_tcp_upstream(tcp_bottom);
 
   /** Downstream delegates */
   auto link_top(nic_.create_link_downstream());
-  auto arp_top(IP4::downstream{arp_, &Arp::transmit});
-  auto ip4_top(IP4::downstream{ip4_, &IP4::transmit});
+  auto arp_top(downstream<ip4::Packet>{arp_, &Arp::transmit});
+  auto ip4_top(downstream<ip4::Packet>{ip4_, &IP4::transmit});
 
   /** Downstream wiring. */
 
@@ -61,11 +61,11 @@ Inet4::Inet4(hw::Nic& nic)
   tcp_.set_network_downstream(ip4_top);
 
   // IP4 -> Arp
-  ip4_.set_linklayer_out(arp_top);
+  ip4_.set_link_downstream(arp_top);
 
   // Arp -> Link
   assert(link_top);
-  arp_.set_linklayer_out(link_top);
+  arp_.set_link_downstream(link_top);
 }
 
 void Inet4::negotiate_dhcp(double timeout, dhcp_timeout_func handler) {

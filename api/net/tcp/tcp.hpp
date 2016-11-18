@@ -45,9 +45,6 @@ namespace net {
     friend class tcp::Connection;
     friend class tcp::Listener;
 
-    using upstream        = IP4::downstream;
-    using downstream      = upstream;
-
   public:
     /////// TCP Stuff - Relevant to the protocol /////
 
@@ -102,7 +99,7 @@ namespace net {
     /*
       Delegate output to network layer
     */
-    void set_network_downstream(downstream del)
+    void set_network_downstream(downstream<ip4::Packet> del)
     { network_downstream_ = del; }
 
     /*
@@ -182,7 +179,7 @@ namespace net {
     Listeners listeners_;
     Connections connections_;
 
-    downstream network_downstream_;
+    downstream<net::ip4::Packet> network_downstream_;
 
     std::deque<tcp::Connection_ptr> writeq;
 
@@ -196,7 +193,7 @@ namespace net {
     /*
       Transmit packet to network layer (IP).
     */
-    void transmit(tcp::Packet_ptr);
+    void transmit(tcp::Packet::ptr);
 
     /*
       Generate a unique initial sequence number (ISS).

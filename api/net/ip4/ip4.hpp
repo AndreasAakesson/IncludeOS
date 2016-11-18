@@ -39,9 +39,6 @@ namespace net {
     using Packet    = ip4::Packet;
     using proto     = ip4::Proto;
 
-    using upstream    = upstream_spec<net::Frame>;
-    using downstream  = downstream_spec<ip4::Packet>;
-
     using ip_header = ip4::Header; // temp
     using full_header = ip4::Full_header; // temp
 
@@ -58,21 +55,21 @@ namespace net {
     { return stack_.MTU() - sizeof(ip4::Header); }
 
     /** Upstream: Input from link layer */
-    void bottom(net::Frame::ptr);
+    void receive(net::Frame::ptr);
 
     /** Upstream: Outputs to transport layer */
-    void set_icmp_handler(upstream_spec<ip4::Packet> s)
-    { icmp_handler_ = s; }
+    void set_icmp_upstream(upstream<ip4::Packet> s)
+    { icmp_upstream_ = s; }
 
-    void set_udp_handler(upstream_spec<ip4::Packet> s)
-    { udp_handler_ = s; }
+    void set_udp_upstream(upstream<ip4::Packet> s)
+    { udp_upstream_ = s; }
 
-    void set_tcp_handler(upstream_spec<ip4::Packet> s)
-    { tcp_handler_ = s; }
+    void set_tcp_upstream(upstream<ip4::Packet> s)
+    { tcp_upstream_ = s; }
 
     /** Downstream: Delegate linklayer out */
-    void set_linklayer_out(downstream s)
-    { linklayer_out_ = s; };
+    void set_link_downstream(downstream<ip4::Packet> s)
+    { link_downstream_ = s; };
 
     void set_packet_forwarding(Stack::Forward_delg fwd)
     { forward_packet_ = fwd; }
@@ -111,12 +108,12 @@ namespace net {
     Stack& stack_;
 
     /** Downstream: Linklayer output delegate */
-    downstream linklayer_out_ {ignore_ip4_down};
+    downstream<ip4::Packet> link_downstream_ {ignore_ip4_down};
 
     /** Upstream delegates */
-    upstream_spec<ip4::Packet> icmp_handler_ {ignore_ip4_up};
-    upstream_spec<ip4::Packet> udp_handler_  {ignore_ip4_up};
-    upstream_spec<ip4::Packet> tcp_handler_  {ignore_ip4_up};
+    upstream<ip4::Packet> icmp_upstream_ {ignore_ip4_up};
+    upstream<ip4::Packet> udp_upstream_  {ignore_ip4_up};
+    upstream<ip4::Packet> tcp_upstream_  {ignore_ip4_up};
 
     /** Packet forwarding  */
     Stack::Forward_delg forward_packet_;

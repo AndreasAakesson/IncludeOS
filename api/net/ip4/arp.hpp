@@ -30,13 +30,13 @@ namespace net {
 
   /** ARP manager, including an ARP-Cache. */
   class Arp {
+  public:
     using Stack   = IP4::Stack;
     /** Network/Internet protocol */
     using Network = IP4;
     /** Link protocol */
     using Link    = Ethernet;
 
-    using downstream = downstream_spec<net::Frame>;
   private:
     /** ARP cache expires after cache_exp_t_ seconds */
     static constexpr uint16_t cache_exp_t_ {60 * 60 * 12};
@@ -91,7 +91,7 @@ namespace net {
     };
 
     /** Handle incoming ARP packet. */
-    void bottom(Packet_ptr pckt);
+    void receive(net::Frame::ptr);
 
     /** Roll your own arp-resolution system. */
     void set_resolver(Arp_resolver ar)
@@ -111,8 +111,8 @@ namespace net {
     }
 
     /** Delegate link-layer output. */
-    void set_linklayer_out(downstream link)
-    { linklayer_out_ = link; }
+    void set_link_downstream(downstream<net::Frame> link)
+    { link_downstream_ = link; }
 
     /** Downstream transmission. */
     void transmit(ip4::Packet::ptr);
@@ -131,7 +131,7 @@ namespace net {
     Link::addr mac_;
 
     /** Outbound data goes through here */
-    downstream linklayer_out_;
+    downstream<net::Frame> link_downstream_;
 
     /** The ARP cache */
     Cache cache_;

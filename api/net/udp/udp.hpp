@@ -37,9 +37,6 @@ namespace net {
 
     using Stack       = IP4::Stack;
 
-    using upstream    = IP4::downstream;
-    using downstream  = upstream;
-
     using full_header = udp::full_header; // temp
 
     using sendto_handler = udp::Socket::sendto_handler;
@@ -87,7 +84,7 @@ namespace net {
     void receive(ip4::Packet::ptr);
 
     /** Delegate output to network layer */
-    void set_network_downstream(downstream del)
+    void set_network_downstream(downstream<ip4::Packet> del)
     { network_downstream_ = del; }
 
     /** Send UDP datagram from source ip/port to destination ip/port.
@@ -144,10 +141,10 @@ namespace net {
     };
 
   private:
-    Stack&      stack_;
-    downstream  network_downstream_;
+    Stack&                        stack_;
+    downstream<ip4::Packet>       network_downstream_;
     std::map<port_t, udp::Socket> ports_;
-    port_t      current_port_ {1024};
+    port_t                        current_port_ {1024};
 
     // the async send queue
     std::deque<WriteBuffer> sendq;

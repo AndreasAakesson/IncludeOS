@@ -55,10 +55,10 @@ namespace hw {
     virtual uint16_t MTU() const noexcept = 0;
 
     /** Implemented by the underlying (link) driver */
-    virtual net::downstream_spec<net::Frame> create_link_downstream() = 0;
-    virtual void set_ip4_upstream(net::upstream_spec<net::Frame> handler) = 0;
-    virtual void set_ip6_upstream(net::upstream handler) = 0;
-    virtual void set_arp_upstream(net::upstream handler) = 0;
+    virtual net::downstream<net::Frame> create_link_downstream() = 0;
+    virtual void set_ip4_upstream(net::upstream<net::Frame> handler) = 0;
+    virtual void set_ip6_upstream(net::upstream<> handler) = 0;
+    virtual void set_arp_upstream(net::upstream<net::Frame> handler) = 0;
 
     /** @note: performance issues with virtual? */
     virtual net::Frame::ptr create_frame() = 0;

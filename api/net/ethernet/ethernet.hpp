@@ -71,7 +71,7 @@ namespace net {
     static const addr IPv6mcast_02;
 
     /** Constructor */
-    explicit Ethernet(downstream physical_downstream, const addr& mac) noexcept;
+    explicit Ethernet(downstream<> physical_downstream, const addr& mac) noexcept;
 
     using header  = ethernet::Header;
     using trailer = ethernet::trailer_t;
@@ -80,7 +80,7 @@ namespace net {
     void receive(Frame::ptr);
 
     /** Delegate upstream IPv4 upstream. */
-    void set_ip4_upstream(upstream_spec<net::Frame> del)
+    void set_ip4_upstream(upstream<net::Frame> del)
     { ip4_upstream_ = del; }
 
     /** Delegate upstream IPv4 upstream. */
@@ -88,21 +88,21 @@ namespace net {
     { return ip4_upstream_; }
 
     /** Delegate upstream IPv6 upstream. */
-    void set_ip6_upstream(upstream del)
+    void set_ip6_upstream(upstream<> del)
     { ip6_upstream_ = del; };
 
     /** Delegate upstream ARP upstream. */
-    void set_arp_upstream(upstream del)
+    void set_arp_upstream(upstream<net::Frame> del)
     { arp_upstream_ = del; }
 
-    upstream& arp_upstream()
+    auto&& arp_upstream()
     { return arp_upstream_; }
 
     /** Delegate downstream */
-    void set_physical_downstream(downstream del)
+    void set_physical_downstream(downstream<> del)
     { physical_downstream_ = del; }
 
-    downstream& physical_downstream()
+    auto&& physical_downstream()
     { return physical_downstream_; }
 
     static constexpr uint16_t header_size() noexcept
@@ -125,12 +125,12 @@ namespace net {
     uint32_t& packets_dropped_;
 
     /** Upstream OUTPUT connections */
-    upstream_spec<net::Frame> ip4_upstream_;
-    upstream ip6_upstream_ = [](net::Packet_ptr){};
-    upstream arp_upstream_ = [](net::Packet_ptr){};
+    upstream<net::Frame> ip4_upstream_;
+    upstream<> ip6_upstream_ = [](net::Packet_ptr){};
+    upstream<net::Frame> arp_upstream_ = [](net::Packet_ptr){};
 
     /** Downstream OUTPUT connection */
-    downstream physical_downstream_ = [](Packet_ptr){};
+    downstream<> physical_downstream_ = [](Packet_ptr){};
 
     void init_frame(Frame&);
 

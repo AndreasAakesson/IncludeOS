@@ -25,7 +25,7 @@
 
 namespace net {
 
-  static void ignore(Packet_ptr) {
+  static void ignore(net::Frame::ptr) {
     debug2("<ARP -> linklayer> Empty handler - DROP!\n");
   }
 
@@ -37,13 +37,13 @@ namespace net {
   replies_tx_     {Statman::get().create(Stat::UINT32, inet.ifname() + ".arp.replies_tx").get_uint32()},
   inet_           {inet},
   mac_            (inet.link_addr()),
-  linklayer_out_  {ignore}
+  link_downstream_{ignore}
   {}
 
-  void Arp::bottom(Packet_ptr pckt) {
-    debug2("<ARP handler> got %i bytes of data\n", pckt->size());
+  void Arp::receive(net::Frame::ptr frame) {
+    debug2("<ARP handler> got %i bytes of data\n", frame->size());
 
-    header* hdr = reinterpret_cast<header*>(pckt->buffer());
+    header* hdr = reinterpret_cast<header*>(frame->buffer());
 
     debug2("Have valid cache? %s\n", is_valid_cached(hdr->sipaddr) ? "YES" : "NO");
     cache(hdr->sipaddr, hdr->shwaddr);
@@ -143,7 +143,7 @@ namespace net {
     debug2("\t My IP: %s belongs to My Mac: %s\n",
            res->source_ip().str().c_str(), res->source_mac().str().c_str());
 
-    linklayer_out_(std::move(res));
+    link_downstream_(std::move(res));
   }
 
   void Arp::transmit(ip4::Packet::ptr pckt) {
@@ -205,7 +205,7 @@ namespace net {
     }
 
     debug2("<ARP -> physical> Sending packet to %s\n", mac_.str().c_str());
-    linklayer_out_(std::move(pckt));
+    link_downstream_(std::move(pckt));
   }
 
   void Arp::await_resolution(Network::Packet::ptr pckt, Network::addr) {
@@ -235,7 +235,7 @@ namespace net {
     // Stat increment requests sent
     requests_tx_++;
 
-    linklayer_out_(std::move(req));
+    link_downstream_(std::move(req));
   }
 
   void Arp::hh_map(Network::Packet::ptr pckt) {
