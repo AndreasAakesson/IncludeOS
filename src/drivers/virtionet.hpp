@@ -130,7 +130,7 @@ public:
   uint16_t MTU() const noexcept override
   { return 1500; }
 
-  net::downstream create_physical_downstream()
+  net::downstream<> create_physical_downstream()
   { return {this, &VirtioNet::transmit}; }
 
   /** Linklayer input. Hooks into IP-stack bottom, w.DOWNSTREAM data.*/

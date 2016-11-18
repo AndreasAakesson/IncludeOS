@@ -16,13 +16,13 @@
 // limitations under the License.
 
 #pragma once
-#ifndef NET_IP4_ARP_HPP
-#define NET_IP4_ARP_HPP
+#ifndef NET_ARP_ARP_HPP
+#define NET_ARP_ARP_HPP
 
 #include <kernel/os.hpp> // OS::uptime()
 #include <map>
 #include <delegate>
-#include "ip4.hpp"
+#include <net/ip4/ip4.hpp>
 
 namespace net {
 
@@ -71,6 +71,17 @@ namespace net {
     enum Opcode { H_request = 0x100, H_reply = 0x200 };
 
     /** Arp opcodes (Big-endian) */
+    enum HTYPE { ETH = 0x0100 };
+    enum PTYPE { IP4 = 0x0008 };
+
+    /** Hardware address length (in octets) */
+    static constexpr uint8_t HLEN()
+    { return sizeof(Link::addr) / 4; }
+
+    /** Protocol address length (in octets) */
+    static constexpr uint8_t PLEN()
+    { return sizeof(Network::addr) / 4; }
+
     static constexpr uint16_t H_htype_eth {0x0100};
     static constexpr uint16_t H_ptype_ip4 {0x0008};
     static constexpr uint16_t H_hlen_plen {0x0406};

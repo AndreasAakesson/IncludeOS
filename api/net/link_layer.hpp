@@ -16,16 +16,16 @@ public:
 public:
   explicit Link_layer(Protocol&& protocol, uint32_t bufstore_sz, uint16_t bufsz);
 
-  downstream_spec<net::Frame> create_link_downstream() override
+  downstream<net::Frame> create_link_downstream() override
   { return {link_, &Protocol::transmit}; }
 
-  void set_ip4_upstream(upstream handler) override
+  void set_ip4_upstream(upstream<net::Frame> handler) override
   { link_.set_ip4_upstream(handler); }
 
-  void set_ip6_upstream(upstream handler) override
+  void set_ip6_upstream(upstream<> handler) override
   { link_.set_ip6_upstream(handler); }
 
-  void set_arp_upstream(upstream handler) override
+  void set_arp_upstream(upstream<net::Frame> handler) override
   { link_.set_arp_upstream(handler); }
 
   hw::Nic::Proto proto() const override

@@ -23,7 +23,7 @@
 #include <hw/nic.hpp>
 #include "inet.hpp"
 #include "ethernet/ethernet.hpp"
-#include "ip4/arp.hpp"
+#include "arp/arp.hpp"
 #include "ip4/ip4.hpp"
 #include "udp/udp.hpp"
 #include "ip4/icmpv4.hpp"

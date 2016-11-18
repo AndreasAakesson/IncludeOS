@@ -19,8 +19,8 @@
 #define DEBUG2 // Allow debugging
 
 #include <vector>
-#include <net/ip4/arp.hpp>
-#include <net/ip4/packet_arp.hpp>
+#include <net/arp/arp.hpp>
+#include <net/arp/packet_arp.hpp>
 #include <statman>
 
 namespace net {
