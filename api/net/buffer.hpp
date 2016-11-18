@@ -124,15 +124,25 @@ namespace net
      * @return     A unique_ptr of Derived type
      */
     template <class Derived, class Base, class Parent = Base>
+    static auto static_cast_upstream(bufptr<Base>&& base)
+    {
+      static_assert(std::is_base_of<Buffer, Base>::value, "Casting something else than a Buffer.");
+      static_assert(std::is_base_of<Parent, Derived>::value, "Derived network packet does not inherit base.");
+      auto* d = static_cast<Derived*>((Parent*)(base.release()));
+      return bufptr<Derived>(d);
+    }
+
+    template <class Derived, class Base, class Parent = Base>
     static auto static_move_upstream(bufptr<Base>&& base)
     {
       static_assert(std::is_base_of<Buffer, Base>::value, "Moving something else than a Buffer.");
       static_assert(std::is_base_of<Parent, Derived>::value, "Derived network packet does not inherit base.");
       // Move payload upstream
       base->upstream();
-      auto* d = static_cast<Derived*>((Parent*)(base.release()));
-      return bufptr<Derived>(d);
+      return static_cast_upstream<Derived, Base, Parent>(std::move(base));
     }
+
+
 
   protected:
     /**

@@ -56,7 +56,7 @@ namespace hw {
 
     /** Implemented by the underlying (link) driver */
     virtual net::downstream_spec<net::Frame> create_link_downstream() = 0;
-    virtual void set_ip4_upstream(net::upstream_spec<net::ip4::Packet> handler) = 0;
+    virtual void set_ip4_upstream(net::upstream_spec<net::Frame> handler) = 0;
     virtual void set_ip6_upstream(net::upstream handler) = 0;
     virtual void set_arp_upstream(net::upstream handler) = 0;
 

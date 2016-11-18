@@ -80,7 +80,7 @@ namespace net {
     void receive(Frame::ptr);
 
     /** Delegate upstream IPv4 upstream. */
-    void set_ip4_upstream(upstream_spec<net::ip4::Packet> del)
+    void set_ip4_upstream(upstream_spec<net::Frame> del)
     { ip4_upstream_ = del; }
 
     /** Delegate upstream IPv4 upstream. */
@@ -125,7 +125,7 @@ namespace net {
     uint32_t& packets_dropped_;
 
     /** Upstream OUTPUT connections */
-    upstream_spec<net::ip4::Packet> ip4_upstream_;
+    upstream_spec<net::Frame> ip4_upstream_;
     upstream ip6_upstream_ = [](net::Packet_ptr){};
     upstream arp_upstream_ = [](net::Packet_ptr){};
 

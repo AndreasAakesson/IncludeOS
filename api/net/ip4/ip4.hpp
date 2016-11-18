@@ -28,7 +28,7 @@
 namespace net {
 
   // Default delegate assignments
-  void ignore_ip4_up(Packet_ptr);
+  void ignore_ip4_up(ip4::Packet::ptr);
   void ignore_ip4_down(Packet_ptr);
 
   /** IP4 layer */
@@ -39,8 +39,8 @@ namespace net {
     using Packet    = ip4::Packet;
     using proto     = ip4::Proto;
 
-    using upstream    = upstream_spec<ip4::Packet>;
-    using downstream  = upstream;
+    using upstream    = upstream_spec<net::Frame>;
+    using downstream  = downstream_spec<ip4::Packet>;
 
     using ip_header = ip4::Header; // temp
     using full_header = ip4::Full_header; // temp
@@ -58,13 +58,13 @@ namespace net {
     { return stack_.MTU() - sizeof(ip4::Header); }
 
     /** Upstream: Input from link layer */
-    void bottom(ip4::Packet::ptr);
+    void bottom(net::Frame::ptr);
 
     /** Upstream: Outputs to transport layer */
-    void set_icmp_handler(upstream s)
+    void set_icmp_handler(upstream_spec<ip4::Packet> s)
     { icmp_handler_ = s; }
 
-    void set_udp_handler(upstream s)
+    void set_udp_handler(upstream_spec<ip4::Packet> s)
     { udp_handler_ = s; }
 
     void set_tcp_handler(upstream_spec<ip4::Packet> s)
@@ -114,9 +114,9 @@ namespace net {
     downstream linklayer_out_ {ignore_ip4_down};
 
     /** Upstream delegates */
-    upstream icmp_handler_ {ignore_ip4_up};
-    upstream udp_handler_  {ignore_ip4_up};
-    upstream_spec<ip4::Packet> tcp_handler_;
+    upstream_spec<ip4::Packet> icmp_handler_ {ignore_ip4_up};
+    upstream_spec<ip4::Packet> udp_handler_  {ignore_ip4_up};
+    upstream_spec<ip4::Packet> tcp_handler_  {ignore_ip4_up};
 
     /** Packet forwarding  */
     Stack::Forward_delg forward_packet_;

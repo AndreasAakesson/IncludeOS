@@ -24,7 +24,6 @@
 #include <net/packet.hpp>
 #include <net/util.hpp>
 #include <statman>
-#include <net/ip4/packet.hpp>
 
 namespace net {
 
@@ -50,7 +49,7 @@ namespace net {
     packets_rx_{Statman::get().create(Stat::UINT64, ".ethernet.packets_rx").get_uint64()},
     packets_tx_{Statman::get().create(Stat::UINT64, ".ethernet.packets_tx").get_uint64()},
     packets_dropped_{Statman::get().create(Stat::UINT32, ".ethernet.packets_dropped").get_uint32()},
-    ip4_upstream_{ignore<ip4::Packet>},
+    ip4_upstream_{ignore<net::Frame>},
     ip6_upstream_{ignore<Buffer>},
     arp_upstream_{ignore<Buffer>},
     physical_downstream_(physical_downstream)
@@ -97,16 +96,19 @@ namespace net {
     switch(eth.type) {
     case ETH_IP4:
       debug2("IPv4 packet\n");
-      ip4_upstream_(Frame::static_move_upstream<ip4::Packet, ethernet::Frame, net::Frame>(std::move(frame)));
+      frame->upstream();
+      ip4_upstream_(std::move(frame));
       break;
 
     case ETH_IP6:
       debug2("IPv6 packet\n");
+      frame->upstream();
       ip6_upstream_(std::move(frame));
       break;
 
     case ETH_ARP:
       debug2("ARP packet\n");
+      frame->upstream();
       arp_upstream_(std::move(frame));
       break;
 

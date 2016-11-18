@@ -37,10 +37,10 @@ namespace net {
   // gateway_.whole = (local_ip_.whole & netmask_.whole) | DEFAULT_GATEWAY;
 }
 
-  void IP4::bottom(ip4::Packet::ptr packet) {
+  void IP4::bottom(net::Frame::ptr frame) {
     debug2("<IP4 handler> got the data.\n");
-    // Cast to IP4 Packet
-    //auto packet = static_unique_ptr_cast<net::PacketIP4>(std::move(pckt));
+    // Cast to IP4 Packet - the frame already had its payload moved
+    auto packet = Frame::static_cast_upstream<ip4::Packet>(std::move(frame));
 
     // Stat increment packets received
     packets_rx_++;
@@ -120,7 +120,7 @@ namespace net {
   }
 
   // Empty handler for delegates initialization
-  void ignore_ip4_up(Packet_ptr) {
+  void ignore_ip4_up(ip4::Packet::ptr) {
     debug("<IP4> Empty handler. Ignoring.\n");
   }
 

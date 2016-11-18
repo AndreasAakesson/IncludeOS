@@ -21,9 +21,9 @@ Inet4::Inet4(hw::Nic& nic)
   /** Upstream delegates */
   auto arp_bottom(upstream{arp_, &Arp::bottom});
   auto ip4_bottom(IP4::upstream{ip4_, &IP4::bottom});
-  auto icmp4_bottom(IP4::upstream{icmp_, &ICMPv4::receive});
-  auto udp4_bottom(IP4::upstream{udp_, &UDP::receive});
-  auto tcp_bottom(IP4::upstream{tcp_, &TCP::receive});
+  auto icmp4_bottom(ICMPv4::upstream{icmp_, &ICMPv4::receive});
+  auto udp4_bottom(UDP::upstream{udp_, &UDP::receive});
+  auto tcp_bottom(TCP::upstream{tcp_, &TCP::receive});
 
   /** Upstream wiring  */
   // Packets available

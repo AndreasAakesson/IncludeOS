@@ -29,7 +29,8 @@ namespace net {
   public:
     using Stack = IP4::Stack;
 
-    using downstream  = upstream_spec<ip4::Packet>;
+    using upstream    = IP4::downstream;
+    using downstream  = upstream;
     // Initialize
     ICMPv4(Stack&);
 

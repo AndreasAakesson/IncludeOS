@@ -19,7 +19,7 @@ public:
   downstream_spec<net::Frame> create_link_downstream() override
   { return {link_, &Protocol::transmit}; }
 
-  void set_ip4_upstream(upstream_spec<net::ip4::Packet> handler) override
+  void set_ip4_upstream(upstream handler) override
   { link_.set_ip4_upstream(handler); }
 
   void set_ip6_upstream(upstream handler) override

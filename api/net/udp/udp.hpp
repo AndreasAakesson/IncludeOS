@@ -37,8 +37,8 @@ namespace net {
 
     using Stack       = IP4::Stack;
 
-    using downstream  = IP4::downstream;
-    using upstream    = IP4::upstream;
+    using upstream    = IP4::downstream;
+    using downstream  = upstream;
 
     using full_header = udp::full_header; // temp
 

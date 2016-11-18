@@ -45,7 +45,7 @@ namespace net {
     friend class tcp::Connection;
     friend class tcp::Listener;
 
-    using upstream        = IP4::upstream;
+    using upstream        = IP4::downstream;
     using downstream      = upstream;
 
   public:
