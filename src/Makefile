@@ -66,7 +66,7 @@ OS_OBJECTS = kernel/start.o kernel/kernel_start.o kernel/syscalls.o \
 		kernel/interrupts.o kernel/os.o kernel/os_stdout.o kernel/cpuid.o \
 		kernel/memmap.o kernel/irq_manager.o kernel/pci_manager.o \
 		kernel/service_stub.o kernel/main_call.o\
-		kernel/elf.o kernel/terminal.o kernel/terminal_disk.o \
+		kernel/elf.o \
 		kernel/vga.o kernel/context.o kernel/context_asm.o kernel/block.o\
 		kernel/profile.o kernel/profile_intr.o \
 		kernel/timers.o kernel/rtc.o \
@@ -89,6 +89,7 @@ OS_OBJECTS = kernel/start.o kernel/kernel_start.o kernel/syscalls.o \
 		posix/sys/socket.o posix/sys/select.o posix/sys/mman.o posix/arpa/inet.o \
 		posix/ucontext.o posix/ucontext_asm.o \
 		posix/sys/syslog.o util/syslogd.o posix/sys/utsname.o
+		#kernel/terminal.o kernel/terminal_disk.o \
 		#../mod/fiber/src/barrier.o ../mod/fiber/src/context.o ../mod/fiber/src/condition_variable.o \
 		#../mod/fiber/src/fiber.o ../mod/fiber/src/future.o ../mod/fiber/src/properties.o ../mod/fiber/src/mutex.o \
 		# ../mod/fiber/src/recursive_mutex.o ../mod/fiber/src/recursive_timed_mutex.o \
