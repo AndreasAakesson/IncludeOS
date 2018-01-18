@@ -91,6 +91,16 @@ namespace http {
     void send(Request_ptr req, Host host, Response_handler cb, Options options = {});
 
     /**
+     * @brief      Send a request to a specific url with a response handler
+     *
+     * @param[in]  req      The request
+     * @param[in]  url      The url
+     * @param[in]  cb       Callback to be invoked when a response is received (or error)
+     * @param[in]  options  The options
+     */
+    void send(Request_ptr req, URI url, Response_handler cb, Options options = {});
+
+    /**
      * @brief      Create a request on the given URL
      *
      * @param[in]  method   The HTTP method

@@ -17,6 +17,13 @@
 
 #include <net/http/client.hpp>
 
+//#define HTTP_DEBUG 1
+#ifdef HTTP_DEBUG
+#define PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define PRINT(fmt, ...) /* fmt */
+#endif
+
 namespace http {
 
   const Client::timeout_duration Client::DEFAULT_TIMEOUT{std::chrono::seconds(5)};
@@ -34,7 +41,7 @@ namespace http {
     req->set_method(method);
 
     auto& header = req->header();
-    header.set_field(header::User_Agent, "IncludeOS/0.10");
+    header.set_field(header::User_Agent, "IncludeOS/0.11");
     set_connection_header(*req);
 
     return req;
@@ -56,12 +63,56 @@ namespace http {
     if(! header.has_field(header::Origin))
       header.set_field(header::Origin, origin());
 
-    debug("<http::Client> Sending Request:\n%s\n", req->to_string().c_str());
+    PRINT("<http::Client> Sending Request:\n%s\n", req->to_string().c_str());
 
     if(on_send_)
       on_send_(*req, options, host);
 
     conn.send(move(req), move(cb), options.bufsize, options.timeout);
+  }
+
+  void Client::send(Request_ptr req, URI url, Response_handler cb, Options options)
+  {
+    Expects(cb != nullptr);
+    using namespace std;
+
+    if (url.host_is_ip4())
+    {
+      std::string host = url.host().to_string();
+      auto ip = net::ip4::Addr(host);
+
+      // Default to port 80 if non given
+      const uint16_t port = (url.port() != 0xFFFF) ? url.port() : 80;
+
+      send(move(req), {ip, port}, move(cb), move(options));
+    }
+    else
+    {
+      tcp_.stack().resolve(url.host().to_string(),
+      ResolveCallback::make_packed(
+      [
+        this,
+        req{move(req)},
+        url{move(url)},
+        cb{move(cb)},
+        opt{move(options)}
+      ]
+        (net::ip4::Addr ip, const net::Error&) mutable
+      {
+        // Host resolved
+        if (ip != 0)
+        {
+          // Default to port 80 if non given
+          const uint16_t port = (url.port() != 0xFFFF) ? url.port() : 80;
+
+          send(move(req), {ip, port}, move(cb), move(opt));
+        }
+        else
+        {
+          cb({Error::RESOLVE_HOST}, nullptr, Connection::empty());
+        }
+      }));
+    }
   }
 
   void Client::request(Method method, URI url, Header_set hfields, Response_handler cb, Options options)
@@ -266,7 +317,7 @@ namespace http {
 
   void Client::close(Client_connection& c)
   {
-    debug("<http::Client> Closing %u:%s %p\n", c.local_port(), c.peer().to_string().c_str(), &c);
+    PRINT("<http::Client> Closing %u:%s %p\n", c.local_port(), c.peer().to_string().c_str(), &c);
     auto& cset = conns_.at(c.peer());
 
     cset.erase(std::remove_if(cset.begin(), cset.end(),
