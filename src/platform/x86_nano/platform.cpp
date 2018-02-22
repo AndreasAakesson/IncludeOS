@@ -4,12 +4,13 @@
 
 extern "C" void noop_eoi() {}
 extern "C" void cpu_sampling_irq_handler() {}
+extern "C" void blocking_cycle_irq_handler() {}
 void (*current_eoi_mechanism)() = noop_eoi;
 void (*current_intr_handler)() = nullptr;
 
 void __arch_poweroff()
 {
-  asm("cli; hlt;");
+  while (1) asm("cli; hlt;");
   __builtin_unreachable();
 }
 
@@ -43,6 +44,10 @@ void SMP::global_lock() noexcept {}
 void SMP::global_unlock() noexcept {}
 int SMP::cpu_id() noexcept { return 0; }
 int SMP::cpu_count() noexcept { return 1; }
+
+void OS::halt(){
+  asm("hlt");
+}
 
 
 // Support for the boot_logger plugin.

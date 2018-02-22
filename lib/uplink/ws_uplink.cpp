@@ -95,7 +95,7 @@ namespace uplink {
   void WS_uplink::store(liu::Storage& store, const liu::buffer_t*)
   {
     // BINARY HASH
-    store.add_string(0, binary_hash_);
+    store.add_string(0, update_hash_);
     // nanos timestamp of when update begins
     store.add<uint64_t> (1, OS::nanos_since_boot());
   }
@@ -151,7 +151,7 @@ namespace uplink {
     retry_backoff = 0;
 
     MYINFO("Auth success (token received)");
-    token_ = res->body().to_string();
+    token_ = std::string(res->body());
 
     dock();
   }
@@ -310,18 +310,26 @@ namespace uplink {
   {
     static SHA1 checksum;
     checksum.update(buffer);
-    binary_hash_ = checksum.as_hex();
+    update_hash_ = checksum.as_hex();
 
     // send a reponse with the to tell we received the update
-    auto trans = Transport{Header{Transport_code::UPDATE, static_cast<uint32_t>(binary_hash_.size())}};
-    trans.load_cargo(binary_hash_.data(), binary_hash_.size());
+    auto trans = Transport{Header{Transport_code::UPDATE, static_cast<uint32_t>(update_hash_.size())}};
+    trans.load_cargo(update_hash_.data(), update_hash_.size());
     ws_->write(trans.data().data(), trans.data().size());
-
     ws_->close();
+
     // do the update
     Timers::oneshot(std::chrono::milliseconds(10),
-    [buffer] (auto) {
-      liu::LiveUpdate::exec(buffer);
+    [this, copy = buffer] (int) {
+      try {
+        liu::LiveUpdate::exec(copy);
+      }
+      catch (std::exception& e) {
+        INFO2("LiveUpdate::exec() failed: %s\n", e.what());
+        liu::LiveUpdate::restore_environment();
+        // establish new connection
+        this->auth();
+      }
     });
   }
 
@@ -450,6 +458,9 @@ namespace uplink {
 
     writer.Key("token");
     writer.String(config_.token);
+
+    writer.Key("reboot");
+    writer.Bool(config_.reboot);
 
     writer.EndObject();
 
