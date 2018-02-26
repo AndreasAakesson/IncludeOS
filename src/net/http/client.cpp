@@ -76,9 +76,10 @@ namespace http {
     Expects(cb != nullptr);
     using namespace std;
 
+    const std::string host{url.host().begin(), url.host().end()};
+
     if (url.host_is_ip4())
     {
-      std::string host = url.host().to_string();
       auto ip = net::ip4::Addr(host);
 
       // Default to port 80 if non given
@@ -88,7 +89,7 @@ namespace http {
     }
     else
     {
-      tcp_.stack().resolve(url.host().to_string(),
+      tcp_.stack().resolve(host,
       ResolveCallback::make_packed(
       [
         this,
