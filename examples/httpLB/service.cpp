@@ -25,7 +25,7 @@ Input_filter input_filter =
   ->Input_result
 {
   printf("input_filter(req): %s %s\n",
-    http::method::str(req->method()).to_string().c_str(),
+    http::method::str(req->method()).data(),
     req->uri().to_string().c_str());
 
 
@@ -35,6 +35,11 @@ Input_filter input_filter =
     auto node = bal.find_node("4");
     Expects(node != bal.pool().end());
     bal.forward(node->host, std::move(req), std::move(rw));
+    return {};
+  }
+  else if(req->uri() == "/google")
+  {
+    bal.redirect(http::Moved_Permanently, "http://www.google.com", std::move(rw));
     return {};
   }
 

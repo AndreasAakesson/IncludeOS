@@ -29,8 +29,8 @@ namespace http_lb {
     else
     {
       rw->write_header(http::Service_Unavailable);
-      // Send custom 404/500 here
-      rw->write("404");
+      // Send custom 404/500 body here
+      rw->write("500");
     }
     finish();
   }
@@ -56,11 +56,18 @@ namespace http_lb {
     });
   }
 
-  void Balancer::forward(uri::URI url, http::Request_ptr req, http::Response_writer_ptr rw)
+  void Balancer::forward(http::URI url, http::Request_ptr req, http::Response_writer_ptr rw)
   {
     // create a transaction
     auto& trans = create_transaction(std::move(rw));
     client.send(std::move(req), url, {trans, &Transaction::handle_resp});
+  }
+
+  void Balancer::redirect(http::status_t code, http::URI url, http::Response_writer_ptr rw)
+  {
+    rw->header().set_field("Location", url);
+    rw->write_header(code);
+    rw->end();
   }
 
   void Balancer::recv_request(http::Request_ptr req, http::Response_writer_ptr rw)

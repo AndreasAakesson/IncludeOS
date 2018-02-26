@@ -81,6 +81,7 @@ namespace http_lb {
   using Output_filter = delegate<Output_result(http::Response_ptr)>;
   using Output_chain  = std::list<Output_filter>;
 
+  // Balance in all things
   class Balancer {
   public:
     using Stack         = net::Inet<net::IP4>;
@@ -98,7 +99,9 @@ namespace http_lb {
 
     Node_iter find_node(const std::string& key);
 
-    void forward(uri::URI url, http::Request_ptr req, http::Response_writer_ptr rw);
+    void forward(http::URI url, http::Request_ptr req, http::Response_writer_ptr rw);
+
+    void redirect(http::status_t code, http::URI url, http::Response_writer_ptr rw);
 
     Nodes& pool()
     { return nodes; }
