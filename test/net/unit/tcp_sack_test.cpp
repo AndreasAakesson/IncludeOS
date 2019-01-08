@@ -52,7 +52,7 @@ CASE("Block test")
   block.end -= 1500;
   EXPECT(block.size() == 1000);
   EXPECT(not block.contains(1000));
-  EXPECT(block.contains(0));
+  EXPECT(not block.contains(0));
   EXPECT(block.contains(-500));
   EXPECT(block.contains(-1000));
 
@@ -71,7 +71,8 @@ CASE("Block test")
   block.start = max_uint;
   block.end   = max_uint / 2 - 1;
   EXPECT(block.size() == max_uint / 2);
-  EXPECT(block.contains(max_uint / 2 - 1));
+  EXPECT(not block.contains(max_uint / 2 - 1));
+  EXPECT(block.contains(max_uint / 2 - 2));
 
 
   const seq_t seq = 1000;
@@ -269,7 +270,7 @@ CASE("SACK block list is full")
                                  {seq - incr * 2, (seq - incr * 2) + blksz  },
                                  {seq - incr * 3, (seq - incr * 3) + blksz } }));
 
-  EXPECT(res.blocksize == blksz);
+  EXPECT(res.length == blksz);
 
   // Try adding one more
   res = sack_list.recv_out_of_order(seq, blksz);
@@ -280,11 +281,11 @@ CASE("SACK block list is full")
                                  {seq - incr * 3, (seq - incr * 3) + blksz } }));
 
   // Nothing inserted
-  EXPECT(res.blocksize == 0);
+  EXPECT(res.length == 0);
 
   // Add a block that connects to the end, which should free up one spot
   res = sack_list.recv_out_of_order(seq - incr + blksz, blksz);
-  EXPECT(res.blocksize == blksz);
+  EXPECT(res.length == blksz);
 
   // Last block should now be larger
   EXPECT(sack_list.recent_entries() == expected({{seq - incr, (seq - incr ) + blksz + blksz },
