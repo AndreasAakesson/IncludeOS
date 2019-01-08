@@ -668,6 +668,8 @@ private:
 
   using Sack_list = sack::List<sack::Fixed_list<default_sack_entries>>;
   std::unique_ptr<Sack_list> sack_list;
+  using Sack_scoreboard = sack::Scoreboard<sack::Scoreboard_list<default_sack_entries>>;
+  std::unique_ptr<Sack_scoreboard> sack_scoreboard;
   /** If SACK is permitted (option has been seen from peer) */
   bool sack_perm = false;
   size_t bytes_sacked_ = 0;

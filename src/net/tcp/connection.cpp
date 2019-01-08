@@ -383,6 +383,27 @@ bool Connection::handle_ack(const Packet_view& in)
 
   // Calculate true window due to WS option
   const uint32_t true_win = in.win() << cb.SND.wind_shift;
+
+  // assume TS opt for now
+  auto* sack_opt = (in.tcp_options_length() < 24) ?
+    nullptr : in.parse_sack_option();
+
+  if(UNLIKELY(sack_opt != nullptr))
+  {
+    if(UNLIKELY(sack_scoreboard == nullptr))
+      sack_scoreboard = std::make_unique<Sack_scoreboard>();
+
+    auto blocks = sack_opt->blocks<sack::Entries>();
+    printf("Contains SACK:");
+    for(auto& b : blocks)
+    {
+      b.swap_endian();
+      sack_scoreboard->recv_sack(cb.SND.UNA, b);
+      printf(" %s", b.to_string().c_str());
+    }
+    printf(" size=%zu\n", sack_scoreboard->impl.blocks.size());
+  }
+
   /*
     (a) the receiver of the ACK has outstanding data
     (b) the incoming acknowledgment carries no data
@@ -436,6 +457,12 @@ bool Connection::handle_ack(const Packet_view& in)
   update_rcv_wnd();
 
   take_rtt_measure(in);
+
+  if(UNLIKELY(sack_scoreboard != nullptr and sack_scoreboard->impl.blocks.size()))
+  {
+    sack_scoreboard->new_valid_ack(cb.SND.UNA);
+    printf("SACK valid %u => size=%zu\n", cb.SND.UNA, sack_scoreboard->impl.blocks.size());
+  }
 
   // do either congctrl or fastrecov according to New Reno
   (not fast_recovery_)
