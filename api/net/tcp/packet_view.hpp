@@ -163,7 +163,15 @@ public:
   const Option::opt_ts* ts_option() const noexcept
   { return ts_opt; }
 
-  inline const Option::opt_ts* parse_ts_option() const noexcept;
+  template <uint8_t Kind>
+  inline const Option* parse_option() const noexcept;
+
+  const Option::opt_ts* parse_ts_option() const noexcept
+  { return reinterpret_cast<const Option::opt_ts*>(parse_option<Option::TS>()); }
+
+  const Option::opt_sack* parse_sack_option() const noexcept
+  { return reinterpret_cast<const Option::opt_sack*>(parse_option<Option::SACK>()); }
+
 
   void set_ts_option(const Option::opt_ts* opt)
   { this->ts_opt = opt; }
@@ -316,7 +324,8 @@ inline void Packet_v<Ptr_type>::add_tcp_option_aligned(Args&&... args) {
 }
 
 template <typename Ptr_type>
-inline const Option::opt_ts* Packet_v<Ptr_type>::parse_ts_option() const noexcept
+template <uint8_t Kind>
+inline const Option* Packet_v<Ptr_type>::parse_option() const noexcept
 {
   auto* opt = this->tcp_options();
   while(opt < (uint8_t*)this->tcp_data())
@@ -329,8 +338,8 @@ inline const Option::opt_ts* Packet_v<Ptr_type>::parse_ts_option() const noexcep
         break;
       }
 
-      case Option::TS: {
-        return reinterpret_cast<Option::opt_ts*>(option);
+      case Kind: {
+        return option;
       }
 
       case Option::END: {

@@ -149,7 +149,7 @@ struct Option {
   } __attribute__((packed));
 
   /**
-   * @brief      Timestamp option [RFC 7323] p. 11
+   * @brief      SACK option [RFC 2018]
    */
   struct opt_sack {
     const uint8_t   kind{SACK};
@@ -164,6 +164,19 @@ struct Option {
       using T = typename Collection::value_type;
       Expects(blocks.size() * sizeof(T) <= 4*8);
       std::memcpy(&val[0], blocks.data(), blocks.size() * sizeof(T));
+    }
+
+    template <typename Collection>
+    Collection blocks() const
+    {
+      Collection blocks;
+      const int size = length - (sizeof(kind) + sizeof(length));
+
+      using T = typename Collection::value_type;
+      for(int i = 0; i <= size - sizeof(T); i += sizeof(T))
+        blocks.push_back(reinterpret_cast<const T&>(val[i]));
+
+      return blocks;
     }
 
   } __attribute__((packed));
