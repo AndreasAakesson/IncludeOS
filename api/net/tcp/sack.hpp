@@ -326,11 +326,8 @@ public:
 template <typename Scoreboard_impl>
 class Scoreboard {
 public:
-  void recv_sack(const seq_t current, Block blk)
-  { return impl.recv_sack(current, blk); }
-
-  void recv_sack(const seq_t current, seq_t start, seq_t end)
-  { return recv_sack(current, {start, end}); }
+  void recv_sack(Block blk)
+  { return impl.recv_sack(blk); }
 
   void new_valid_ack(const seq_t seq)
   { return impl.new_valid_ack(seq); }
@@ -348,7 +345,7 @@ public:
   using List          = std::list<Block, Fixed_list_alloc<Block, N>>;
   using List_iterator = typename List::iterator;
 
-  void recv_sack(const seq_t cur, Block blk)
+  void recv_sack(Block blk)
   {
     auto current = blocks.end();
     //printf("blk %s\n", blk.to_string().c_str());

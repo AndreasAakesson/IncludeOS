@@ -311,20 +311,19 @@ CASE("SACK Scoreboard - recv SACK")
   using Sack_scoreboard = Scoreboard<Scoreboard_list<9>>;
 
   Sack_scoreboard scoreboard;
-  const seq_t current = 1000;
   auto& blocks = scoreboard.impl.blocks;
   auto it = blocks.end();
   EXPECT(blocks.empty());
 
-  scoreboard.recv_sack(current, 1500, 2000);
+  scoreboard.recv_sack({1500, 2000});
   EXPECT(blocks.size() == 1);
-  scoreboard.recv_sack(current, 1500, 2000);
+  scoreboard.recv_sack({1500, 2000});
   EXPECT(blocks.size() == 1);
   //scoreboard.recv_sack(current, 1000, 2000);
   //EXPECT(blocks.size() == 1);
 
 
-  scoreboard.recv_sack(current, 3500, 4000);
+  scoreboard.recv_sack({3500, 4000});
   EXPECT(blocks.size() == 2);
 
   it = blocks.begin();
@@ -332,7 +331,7 @@ CASE("SACK Scoreboard - recv SACK")
   it++;
   EXPECT(*it == Block(3500,4000));
 
-  scoreboard.recv_sack(current, 2500, 3000);
+  scoreboard.recv_sack({2500, 3000});
   EXPECT(blocks.size() == 3);
 
   it = blocks.begin();
@@ -342,7 +341,7 @@ CASE("SACK Scoreboard - recv SACK")
   it++;
   EXPECT(*it == Block(3500, 4000));
 
-  scoreboard.recv_sack(current, 1500, 3000);
+  scoreboard.recv_sack({1500, 3000});
   EXPECT(blocks.size() == 2);
 
   it = blocks.begin();
@@ -350,7 +349,7 @@ CASE("SACK Scoreboard - recv SACK")
   it++;
   EXPECT(*it == Block(3500,4000));
 
-  scoreboard.recv_sack(current, 1500, 4500);
+  scoreboard.recv_sack({1500, 4500});
   EXPECT(blocks.size() == 1);
 
   it = blocks.begin();
@@ -367,14 +366,13 @@ CASE("SACK Scoreboard - new valid ACK")
   using Sack_scoreboard = Scoreboard<Scoreboard_list<9>>;
 
   Sack_scoreboard scoreboard;
-  const seq_t current = 1000;
   auto& blocks = scoreboard.impl.blocks;
   auto it = blocks.end();
   EXPECT(blocks.empty());
 
-  scoreboard.recv_sack(current, 1500, 2000);
-  scoreboard.recv_sack(current, 2500, 3000);
-  scoreboard.recv_sack(current, 3500, 4000);
+  scoreboard.recv_sack({1500, 2000});
+  scoreboard.recv_sack({2500, 3000});
+  scoreboard.recv_sack({3500, 4000});
 
   scoreboard.new_valid_ack(1000);
   EXPECT(blocks.size() == 3);

@@ -398,7 +398,7 @@ bool Connection::handle_ack(const Packet_view& in)
     for(auto& b : blocks)
     {
       b.swap_endian();
-      sack_scoreboard->recv_sack(cb.SND.UNA, b);
+      sack_scoreboard->recv_sack(b);
       printf(" %s", b.to_string().c_str());
     }
     printf(" size=%zu\n", sack_scoreboard->impl.blocks.size());
