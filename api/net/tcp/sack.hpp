@@ -25,11 +25,11 @@
 #include <list>
 #include <ostream>
 
-using seq_t = uint32_t;
-
 namespace net {
 namespace tcp {
 namespace sack {
+
+using seq_t = uint32_t;
 
 struct Block {
   Block(seq_t start, seq_t end)
@@ -66,11 +66,25 @@ struct Block {
            static_cast<int32_t>(seq - end) < 0;
   }
 
-  bool precedes(const seq_t seq) const noexcept
-  { return static_cast<int32_t>(end - seq) <= 0; }
+  /**
+   * @brief      Returns if this block precedes the other block.
+   *             Any overlap will yield false.
+   *
+   * @param[in]  other  Block to compare against
+   *
+   * @return     Wether this end is before other start
+   */
+  bool precedes(const Block& other) const noexcept
+  { return static_cast<int32_t>(end - other.start) <= 0; }
 
-  bool precedes(const seq_t seq, const Block& other) const noexcept
-  { return (start - seq) < (other.start - seq); }
+  bool overlaps(const Block& other) const noexcept
+  { return contains(other.start) or contains(other.end-1); }
+
+  bool start_before(seq_t seq) const noexcept
+  { return static_cast<int32_t>(start - seq) < 0; }
+
+  bool end_after(seq_t seq) const noexcept
+  { return static_cast<int32_t>(end - seq) > 0; }
 
   bool connects_start(const Block& other) const noexcept
   { return other.end == start; }
@@ -334,28 +348,68 @@ public:
   using List          = std::list<Block, Fixed_list_alloc<Block, N>>;
   using List_iterator = typename List::iterator;
 
-  void recv_sack(const seq_t current, Block blk)
+  void recv_sack(const seq_t cur, Block blk)
   {
-    auto connected = connects_to(blocks.begin(), blocks.end(), blk);
-
-    if (connected.end != blocks.end()) // Connectes to an end
+    auto current = blocks.end();
+    //printf("blk %s\n", blk.to_string().c_str());
+    for(auto it = blocks.begin(); it != blocks.end(); it++)
     {
-      connected.end->end = blk.end;
-
-      // It also connects to a start, e.g. fills a hole
-      if (connected.start != blocks.end())
+      if(blk.overlaps(*it))
       {
-        connected.end->end = connected.start->end;
-        blocks.erase(connected.start);
+        current = it;
+        break;
       }
     }
-    else if (connected.start != blocks.end()) // Connected only to an start
+
+    if(UNLIKELY(current == blocks.end()))
     {
-      connected.start->start = blk.start;
+      insert(blk);
+      return;
     }
-    else // No connection - new entry
+
+    // first overlap
+    // same (DSACK)
+    if(blk == *current)
     {
-      insert(current, blk);
+      //printf("same %s\n", blk.to_string().c_str());
+      return;
+    }
+
+    // extending end
+    if(blk.end_after(current->end)) // blk.end > current->end
+    {
+      current->end = blk.end;
+      //printf("extending end %s\n", blk.to_string().c_str());
+    }
+
+    // extending start
+    if(UNLIKELY(blk.start_before(current->start))) // blk.start < current->start
+    {
+      current->start = blk.start;
+      //printf("extending start %s\n", blk.to_string().c_str());
+    }
+
+    current++;
+
+    for(auto it = current; it != blocks.end(); )
+    {
+      //printf("concat %s => %s\n",
+      //  blk.to_string().c_str(), it->to_string().c_str());
+
+      // end is equal or less
+      if(not blk.end_after(it->end))
+      {
+        //printf("same or less end\n");
+        //first_overlap->end = it->end; // take it end
+        blocks.erase(it); // erase it
+        return;
+      }
+      // end is past this one
+      else
+      {
+        //printf("end past\n");
+        it = blocks.erase(it);
+      }
     }
   }
 
@@ -363,17 +417,19 @@ public:
   {
     for(auto it = blocks.begin(); it != blocks.end(); )
     {
-      auto tmp = it++;
+      if(it->end > seq) {
+        // check if partial?
+        return;
+      }
 
-      if (tmp->precedes(seq))
-        blocks.erase(tmp);
+      it = blocks.erase(it);
     }
   }
 
   void clear()
   { blocks.clear(); }
 
-  void insert(const seq_t current, Block blk)
+  void insert(Block blk)
   {
     Expects(blocks.size() <= size);
 
@@ -382,10 +438,11 @@ public:
 
     auto it = std::find_if(blocks.begin(), blocks.end(),
       [&](const auto& block) {
-        return blk.precedes(current, block);
+        return blk.precedes(block);
     });
 
     blocks.insert(it, blk);
+    //printf("insert %s\n", blk.to_string().c_str());
   }
 
   List blocks;

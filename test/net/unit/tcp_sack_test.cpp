@@ -74,27 +74,30 @@ CASE("Block test")
   EXPECT(not block.contains(max_uint / 2 - 1));
   EXPECT(block.contains(max_uint / 2 - 2));
 
+  Block blk_lesser{max_uint - 1000, max_uint};
+  Block blk_greater{0, 2500};
+  Block blk_greater2{2500, 3000};
 
-  const seq_t seq = 1000;
-  Block blk_lesser{1500,2000};
-  Block blk_greater{2500,3000};
-  Block blk_greater2{0,1000};
+  EXPECT(blk_lesser.precedes(blk_greater));
+  EXPECT(blk_lesser.precedes(blk_greater2));
+  EXPECT(blk_greater.precedes(blk_greater2));
 
-  EXPECT(blk_lesser.precedes(seq, blk_greater));
-  EXPECT(blk_lesser.precedes(seq, blk_greater2));
-  EXPECT(blk_greater.precedes(seq, blk_greater2));
+  EXPECT(blk_lesser.start_before(blk_greater.start));
+  EXPECT(not blk_lesser.end_after(blk_greater.end));
 
-  EXPECT(not blk_lesser.precedes(seq));
-  EXPECT(not blk_lesser.precedes(1500));
-  EXPECT(not blk_lesser.precedes(1800));
-  EXPECT(blk_lesser.precedes(2000));
-  EXPECT(blk_lesser.precedes(4000));
+  EXPECT(not blk_lesser.overlaps(blk_greater));
+  EXPECT(not blk_greater.overlaps(blk_greater2));
+  Block overlap{1500,2600};
+  EXPECT(overlap.overlaps(blk_greater));
+  EXPECT(blk_greater.overlaps(overlap));
+  EXPECT(overlap.overlaps(blk_greater2));
+  EXPECT(blk_greater2.overlaps(overlap));
+  EXPECT(not overlap.precedes(blk_greater2));
 
-  // NOTE: Invalidates the block
-  block = Block{1500, 2000};
-  block.swap_endian();
-  EXPECT(block.start == htonl(1500));
-  EXPECT(block.end   == htonl(2000));
+  Block swaperino{1500, 2000};
+  swaperino.swap_endian();
+  EXPECT(swaperino.start == htonl(1500));
+  EXPECT(swaperino.end   == htonl(2000));
 }
 
 CASE("SACK Fixed List implementation [RFC 2018]")
@@ -315,6 +318,11 @@ CASE("SACK Scoreboard - recv SACK")
 
   scoreboard.recv_sack(current, 1500, 2000);
   EXPECT(blocks.size() == 1);
+  scoreboard.recv_sack(current, 1500, 2000);
+  EXPECT(blocks.size() == 1);
+  //scoreboard.recv_sack(current, 1000, 2000);
+  //EXPECT(blocks.size() == 1);
+
 
   scoreboard.recv_sack(current, 3500, 4000);
   EXPECT(blocks.size() == 2);
@@ -334,7 +342,7 @@ CASE("SACK Scoreboard - recv SACK")
   it++;
   EXPECT(*it == Block(3500, 4000));
 
-  scoreboard.recv_sack(current, 2000, 2500);
+  scoreboard.recv_sack(current, 1500, 3000);
   EXPECT(blocks.size() == 2);
 
   it = blocks.begin();
@@ -342,11 +350,11 @@ CASE("SACK Scoreboard - recv SACK")
   it++;
   EXPECT(*it == Block(3500,4000));
 
-  scoreboard.recv_sack(current, 3000, 3500);
+  scoreboard.recv_sack(current, 1500, 4500);
   EXPECT(blocks.size() == 1);
 
   it = blocks.begin();
-  EXPECT(*it == Block(1500,4000));
+  EXPECT(*it == Block(1500,4500));
 
   scoreboard.clear();
 
