@@ -3,6 +3,7 @@
 #include <net/inet>
 #include <net/tcp/stream.hpp>
 #include <net/s2n/stream.hpp>
+#include <liveupdate>
 
 #define LB_VERBOSE 0
 #if LB_VERBOSE
