@@ -33,11 +33,19 @@
 namespace microLB
 {
   Node::Node(Balancer& balancer, const net::Socket addr,
-             node_connect_function_t func, bool da, int idx)
-    : m_connect(func), m_socket(addr), m_idx(idx), do_active_check(da)
+             node_connect_function_t func,
+             std::unique_ptr<Probe> probe,
+             bool da, int idx)
+    : m_connect(func), m_probe{std::move(probe)},
+      m_socket(addr), m_idx(idx), do_active_check(da)
   {
     assert(this->m_connect != nullptr);
     this->m_pool_signal = balancer.get_pool_signal();
+
+    if(this->m_probe != nullptr)
+    {
+      this->m_probe->activate({this, &Node::handle_probe_result});
+    }
     // periodically connect to node and determine if active
     if (this->do_active_check)
     {
@@ -140,5 +148,9 @@ namespace microLB
         }
     }
     return nullptr;
+  }
+  void Node::handle_probe_result(bool active)
+  {
+
   }
 }

@@ -18,6 +18,7 @@
 #include <net/stream.hpp>
 #include <vector>
 #include <chrono>
+#include "probe/probe.hpp"
 
 namespace microLB
 {
@@ -29,6 +30,7 @@ namespace microLB
   struct Balancer;
   struct Node {
     Node(Balancer&, net::Socket, node_connect_function_t,
+         std::unique_ptr<Probe> probe = nullptr,
          bool do_active = true, int idx = -1);
 
     auto address() const noexcept { return m_socket; }
@@ -47,11 +49,14 @@ namespace microLB
     node_connect_function_t m_connect = nullptr;
     pool_signal_t           m_pool_signal = nullptr;
     std::vector<net::Stream_ptr> pool;
+    std::unique_ptr<Probe> m_probe;
     net::Socket m_socket;
     int         m_idx;
     bool        active = false;
     const bool  do_active_check;
     int32_t     active_timer = -1;
     int32_t     connecting = 0;
+
+    void handle_probe_result(bool active);
   };
 }
