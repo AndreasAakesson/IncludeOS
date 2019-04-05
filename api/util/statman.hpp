@@ -138,6 +138,9 @@ public:
    */
   bool empty() const noexcept { return m_stats.empty(); }
 
+  /* Free all stats (NB: one stat remains!) */
+  void clear();
+
   auto begin() const noexcept { return m_stats.begin(); }
   auto end() const noexcept { return m_stats.end(); }
   auto cbegin() const noexcept { return m_stats.cbegin(); }
@@ -150,15 +153,20 @@ public:
 private:
   std::deque<Stat> m_stats;
 #ifdef INCLUDEOS_SMP_ENABLE
-  spinlock_t stlock = 0;
+  mutable spinlock_t stlock = 0;
 #endif
   ssize_t find_free_stat() const noexcept;
+  uint32_t& unused_stats();
 
   Statman(const Statman& other) = delete;
   Statman(const Statman&& other) = delete;
   Statman& operator=(const Statman& other) = delete;
   Statman& operator=(Statman&& other) = delete;
 }; //< class Statman
+
+inline uint32_t& Statman::unused_stats() {
+  return m_stats.at(0).get_uint32();
+}
 
 inline float& Stat::get_float() {
   if (UNLIKELY(type() != FLOAT)) throw Stats_exception{"Stat type is not a float"};

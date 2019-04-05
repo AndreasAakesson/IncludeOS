@@ -56,12 +56,31 @@ namespace net {
     /** Called with a shared buffer and the length of the data when received. */
     using ReadCallback = delegate<void(buffer_t)>;
     /**
-     * @brief      Event when data is received.
+     * @brief      Event when data is received. Pushes data to the callback.
      *
      * @param[in]  n     The size of the receive buffer
      * @param[in]  cb    The read callback
      */
     virtual void on_read(size_t n, ReadCallback cb) = 0;
+
+    using DataCallback = delegate<void()>;
+    /**
+     * @brief      Event when data is received.
+     *             Does not push data, just signals its presence.
+     *
+     * @param[in]  cb    The callback
+     */
+    virtual void on_data(DataCallback cb) = 0;
+
+    /**
+     * @return The size of the next available chunk of data if any.
+     */
+    virtual size_t next_size() = 0;
+
+    /**
+     * @return The next available chunk of data if any.
+     */
+    virtual buffer_t read_next() = 0;
 
     /** Called with nothing ¯\_(ツ)_/¯ */
     using CloseCallback = delegate<void()>;
@@ -185,7 +204,15 @@ namespace net {
     /** Recursively navigate to the transport stream at the bottom **/
     inline Stream* bottom_transport() noexcept;
 
-    virtual size_t serialize_to(void*) const = 0;
+    /** default empty implementation of serialize_to(...) **/
+    virtual size_t serialize_to(void*, size_t) const {
+      throw std::runtime_error("Not implemented for this stream");
+    }
+    /** default subid for stream **/
+    virtual uint16_t serialization_subid() const {
+      // NOTE: when provided with nullptr and size == 0, return an id
+      throw std::runtime_error("Not implemented for this stream");
+    }
 
     virtual ~Stream() = default;
   }; // < class Stream

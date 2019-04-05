@@ -26,8 +26,11 @@ Statman& Statman::get() {
 }
 
 Stat::Stat(const Stat_type type, const std::string& name)
-  : ui64(0), m_bits{type}
+  : ui64(0)
 {
+  // stats are persisted by default
+  this->m_bits = uint8_t(type) | PERSIST_BIT;
+
   if (name.size() > MAX_NAME_LEN)
     throw Stats_exception("Stat name cannot be longer than " + std::to_string(MAX_NAME_LEN) + " characters");
 
@@ -36,12 +39,12 @@ Stat::Stat(const Stat_type type, const std::string& name)
 Stat::Stat(const Stat& other) {
   this->ui64   = other.ui64;
   this->m_bits = other.m_bits;
-  strncpy(this->name_, other.name_, MAX_NAME_LEN);
+  __builtin_memcpy(this->name_, other.name_, sizeof(name_));
 }
 Stat& Stat::operator=(const Stat& other) {
   this->ui64   = other.ui64;
   this->m_bits = other.m_bits;
-  strncpy(this->name_, other.name_, MAX_NAME_LEN);
+  __builtin_memcpy(this->name_, other.name_, sizeof(name_));
   return *this;
 }
 
@@ -85,7 +88,7 @@ Stat& Statman::create(const Stat::Stat_type type, const std::string& name)
 
   // note: we have to create this early in case it throws
   auto& stat = *new (&m_stats[idx]) Stat(type, name);
-  m_stats[0].get_uint32()--; // decrease unused stats
+  unused_stats()--; // decrease unused stats
   return stat;
 }
 
@@ -126,17 +129,21 @@ void Statman::free(void* addr)
 #endif
   // delete entry
   new (&stat) Stat(Stat::FLOAT, "");
-  m_stats[0].get_uint32()++; // increase unused stats
+  unused_stats()++; // increase unused stats
 }
 
 ssize_t Statman::find_free_stat() const noexcept
 {
-#ifdef INCLUDEOS_SMP_ENABLE
-  volatile scoped_spinlock lock(this->stlock);
-#endif
   for (size_t i = 0; i < this->m_stats.size(); i++)
   {
     if (m_stats[i].unused()) return i;
   }
   return -1;
+}
+
+void Statman::clear()
+{
+  if (size() <= 1) return;
+  m_stats.clear();
+  this->create(Stat::UINT32, "statman.unused_stats");
 }

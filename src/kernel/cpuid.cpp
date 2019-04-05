@@ -32,11 +32,13 @@ namespace std
 }
 
 namespace CPUID {
-  const Feature_map feature_names {
+  const std::unordered_map<Feature, const char*> feature_names
+  {
       {Feature::SSE2,"SSE2"},
       {Feature::SSE3,"SSE3"},
       {Feature::SSSE3,"SSSE3"},
       {Feature::RDRAND,"RDRAND"},
+      {Feature::RDSEED,"RDSEED"},
       {Feature::XSAVE,"XSAVE"},
       {Feature::FXSR,"FXSR"},
       {Feature::AES,"AES"},
@@ -207,10 +209,12 @@ namespace
 
       case Feature::SVM:          return FeatureInfo { 0x80000001, 0, Register::ECX, 1u <<  2 }; // Secure Virtual Machine (AMD-V)
       case Feature::SSE4A:        return FeatureInfo { 0x80000001, 0, Register::ECX, 1u <<  6 }; // SSE4a
+      // Standard function 7
       case Feature::AVX2:         return FeatureInfo { 7, 0, Register::ECX, 1u <<  5 }; // AVX2
       case Feature::BMI1:         return FeatureInfo { 7, 0, Register::ECX, 1u <<  3 }; // BMI1
       case Feature::BMI2:         return FeatureInfo { 7, 0, Register::ECX, 1u <<  8 }; // BMI2
       case Feature::LZCNT:        return FeatureInfo { 7, 0, Register::ECX, 1u <<  5 }; // LZCNT
+      case Feature::RDSEED:       return FeatureInfo { 7, 0, Register::EBX, 1u << 18 }; // RDSEED
       default: throw std::out_of_range("Unimplemented CPU feature encountered");
     }
   }
@@ -254,11 +258,15 @@ namespace
 
     // Call cpuid
     // EBX/RBX needs to be preserved depending on the memory model and use of PIC
+
     cpuid_t result;
+#if defined(ARCH_x86) || defined(ARCH_x86_64)
     asm volatile ("cpuid"
       : "=a"(result.EAX), "=b"(result.EBX), "=c"(result.ECX), "=d"(result.EDX)
       : "a"(func), "c"(subfunc));
+#elif defined(ARCH_aarch64)
 
+#endif
     // Try to find an empty spot in the cache
     for (auto& cached : cache)
     {
@@ -328,8 +336,8 @@ bool CPUID::kvm_feature(unsigned mask) noexcept
   return (res.EAX & mask) != 0;
 }
 
-CPUID::Feature_list CPUID::detect_features() {
-  CPUID::Feature_list vec;
+std::vector<Feature> CPUID::detect_features() {
+  std::vector<Feature> vec;
   for (const auto feat : feature_names) {
     if (CPUID::has_feature(feat.first))
       vec.push_back(feat.first);
@@ -337,8 +345,8 @@ CPUID::Feature_list CPUID::detect_features() {
   return vec;
 }
 
-CPUID::Feature_names CPUID::detect_features_str() {
-  CPUID::Feature_names names;
+std::vector<const char*> CPUID::detect_features_str() {
+  std::vector<const char*> names;
   auto features = detect_features();
   for (auto& feat : features) {
     names.push_back(feature_names.at(feat));

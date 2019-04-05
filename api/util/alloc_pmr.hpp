@@ -27,10 +27,8 @@ namespace std {
 #include <memory_resource>
 #include <vector> // For pmr::vector
 #endif
-
-
 #include <delegate>
-#include <malloc.h>
+extern void* aligned_alloc(size_t alignment, size_t size);
 
 namespace os::mem::detail {
   class Pmr_pool;
@@ -106,7 +104,10 @@ namespace os::mem {
 
   struct Default_pmr : public std::pmr::memory_resource {
     void* do_allocate(std::size_t size, std::size_t align) override {
-      return memalign(align, size);
+      auto* res = aligned_alloc(align, size);
+      if (res == nullptr)
+        throw std::bad_alloc();
+      return res;
     }
 
     void do_deallocate (void* ptr, size_t, size_t) override {

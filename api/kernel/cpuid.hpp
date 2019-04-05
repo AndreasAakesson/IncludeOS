@@ -59,6 +59,7 @@ namespace CPUID
     AVX,               // AVX Instructions
     F16C,              // 16-bit Floating Point Instructions
     RDRAND,            // RDRAND Instruction
+    RDSEED,            // RDSEED Instruction
 
     FPU,               // Floating-Point Unit On-Chip
     VME,               // Virtual 8086 Mode Extensions
@@ -114,12 +115,8 @@ namespace CPUID
     TSC_INV,           // Invariant TSC
   };
 
-  using Feature_map =  const std::unordered_map<Feature, const char*>;
-  using Feature_list = std::vector<Feature>;
-  using Feature_names = std::vector<const char*>;
-
-  Feature_names  detect_features_str();
-  Feature_list detect_features();
+  std::vector<const char*> detect_features_str();
+  std::vector<Feature>     detect_features();
 
   bool is_amd_cpu()   noexcept;
   bool is_intel_cpu() noexcept;

@@ -93,6 +93,35 @@ public:
    */
   inline Connection&            on_read(size_t recv_bufsz, ReadCallback callback);
 
+
+  using DataCallback           = delegate<void()>;
+  /**
+   * @brief      Event when incoming data is received by the connection.
+   *             The callback is called when either 1) PSH is seen, or 2) the buffer is full
+   *
+   *             The user is expected to fetch data by calling read_next, otherwise the
+   *             event will be triggered again. Unread data will be buffered as long as
+   *             there is capacity in the read queue.
+   *             If an on_read callback is also registered, this event has no effect.
+   *
+   * @param[in]  callback    The callback
+   *
+   * @return     This connection
+   */
+  inline Connection&            on_data(DataCallback callback);
+
+  /**
+   * @brief      Read the next fully acked chunk of received data if any.
+   *
+   * @return     Pointer to buffer if any, otherwise nullptr.
+   */
+  inline buffer_t read_next();
+
+  /**
+   * @return     The size of the next fully acked chunk of received data.
+   */
+  inline size_t   next_size();
+
   /** Called with the connection itself and the reason wrapped in a Disconnect struct. */
   using DisconnectCallback      = delegate<void(Connection_ptr self, Disconnect)>;
   /**
@@ -233,8 +262,8 @@ public:
     SEQ_OUT_OF_ORDER,
     ACK_NOT_SET,
     ACK_OUT_OF_ORDER,
-    RST,
-    RCV_WND_ZERO
+    RCV_WND_ZERO,
+    RST
   }; // < Drop_reason
 
   /**
@@ -293,7 +322,7 @@ public:
    * @return     True if able to send, False otherwise.
    */
   bool can_send() const noexcept
-  { return usable_window() and writeq.has_remaining_requests(); }
+  { return (usable_window() >= SMSS()) and writeq.has_remaining_requests(); }
 
   /**
    * @brief      Return the "tuple" (id) of the connection.
@@ -543,8 +572,8 @@ public:
 
     uint32_t TS_recent; // Recent timestamp received from user [RFC 7323]
 
-    TCB(const uint32_t recvwin);
-    TCB();
+    TCB(const uint16_t mss, const uint32_t recvwin);
+    TCB(const uint16_t mss);
 
     void init() {
       ISS = Connection::generate_iss();
@@ -602,7 +631,6 @@ public:
    */
   void reset_callbacks();
 
-
   using Recv_window_getter = delegate<uint32_t()>;
   void set_recv_wnd_getter(Recv_window_getter func)
   { recv_wnd_getter = func; }
@@ -640,10 +668,6 @@ private:
   /** Round Trip Time Measurer */
   RTTM rttm;
 
-  /** Function from where to retrieve
-   * the current recv window size for this connection */
-  Recv_window_getter recv_wnd_getter;
-
   /** Callbacks */
   ConnectCallback         on_connect_;
   DisconnectCallback      on_disconnect_;
@@ -654,6 +678,8 @@ private:
 
   /** Time Wait / DACK timeout timer */
   Timer timewait_dack_timer;
+
+  Recv_window_getter recv_wnd_getter;
 
   bool close_signaled_ = false;
 
@@ -715,6 +741,14 @@ private:
    * @param[in]  cb          The read callback
    */
   void _on_read(size_t recv_bufsz, ReadCallback cb);
+
+  /**
+   * @brief      Set the on_data handler
+   *
+   * @param[in]  cb          The callback
+   */
+  void _on_data(DataCallback cb);
+
 
   // Retrieve the associated shared_ptr for a connection, if it exists
   // Throws out_of_range if it doesn't
@@ -988,6 +1022,8 @@ private:
   Packet_view_ptr outgoing_packet()
   { return create_outgoing_packet(); }
 
+  uint16_t MSS() const noexcept;
+
   /**
    * @brief      Maximum Segment Data Size
    *             Limits the size for outgoing packets
@@ -1048,7 +1084,7 @@ private:
   void finish_fast_recovery();
 
   bool reno_full_ack(seq_t ACK)
-  { return ACK - 1 > cb.recover; }
+  { return static_cast<int32_t>(ACK - cb.recover) > 1; }
 
 
 

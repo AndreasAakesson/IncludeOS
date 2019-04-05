@@ -33,18 +33,18 @@ Connection::Connection(TCP& host, Socket local, Socket remote, ConnectCallback c
     is_ipv6_(local_.address().is_v6()),
     state_(&Connection::Closed::instance()),
     prev_state_(state_),
-    cb{host_.window_size()},
+    cb{(is_ipv6_) ? default_mss_v6 : default_mss, host_.window_size()},
     read_request(nullptr),
     writeq(),
-    recv_wnd_getter{nullptr},
     on_connect_{std::move(callback)},
     on_disconnect_({this, &Connection::default_on_disconnect}),
     rtx_timer({this, &Connection::rtx_timeout}),
     timewait_dack_timer({this, &Connection::dack_timeout}),
+    recv_wnd_getter{nullptr},
     queued_(false),
     dack_{0},
     last_ack_sent_{cb.RCV.NXT},
-    smss_{host_.MSS()}
+    smss_{MSS()}
 {
   setup_congestion_control();
   //printf("<Connection> Created %p %s  ACTIVE: %u\n", this,
@@ -53,8 +53,9 @@ Connection::Connection(TCP& host, Socket local, Socket remote, ConnectCallback c
 
 Connection::~Connection()
 {
-  //printf("<Connection> Deleted %p %s  ACTIVE: %u\n", this,
+  //printf("<Connection> Deleted %p %s  ACTIVE: %zu\n", this,
   //        to_string().c_str(), host_.active_connections());
+
   rtx_clear();
 }
 
@@ -65,7 +66,8 @@ void Connection::_on_read(size_t recv_bufsz, ReadCallback cb)
   {
     Expects(bufalloc != nullptr);
     read_request.reset(
-      new Read_request(this->cb.RCV.NXT, host_.min_bufsize(), host_.max_bufsize(), cb, bufalloc.get()));
+      new Read_request(this->cb.RCV.NXT, host_.min_bufsize(), host_.max_bufsize(), bufalloc.get()));
+    read_request->on_read_callback = cb;
     const size_t avail_thres = host_.max_bufsize() * Read_request::buffer_limit;
     bufalloc->on_avail(avail_thres, {this, &Connection::trigger_window_update});
   }
@@ -73,7 +75,7 @@ void Connection::_on_read(size_t recv_bufsz, ReadCallback cb)
   else
   {
     //printf("on_read already set\n");
-    read_request->callback = cb;
+    read_request->on_read_callback = cb;
     // this will flush the current data to the user (if any)
     read_request->reset(this->cb.RCV.NXT);
 
@@ -83,6 +85,32 @@ void Connection::_on_read(size_t recv_bufsz, ReadCallback cb)
       sack_list->clear();
   }
 }
+
+void Connection::_on_data(DataCallback cb) {
+  if(read_request == nullptr)
+  {
+    Expects(bufalloc != nullptr);
+    read_request.reset(
+      new Read_request(this->cb.RCV.NXT, host_.min_bufsize(), host_.max_bufsize(), bufalloc.get()));
+    read_request->on_data_callback = cb;
+    const size_t avail_thres = host_.max_bufsize() * Read_request::buffer_limit;
+    bufalloc->on_avail(avail_thres, {this, &Connection::trigger_window_update});
+  }
+  // read request is already set, only reset if new size.
+  else
+  {
+    //printf("on_read already set\n");
+    read_request->on_data_callback = cb;
+
+    read_request->reset(this->cb.RCV.NXT);
+
+    // due to throwing away buffers (and all data) we also
+    // need to clear the sack list if anything is stored here.
+    if(sack_list)
+      sack_list->clear();
+  }
+}
+
 
 Connection_ptr Connection::retrieve_shared() {
   return host_.retrieve_shared(this);
@@ -96,8 +124,8 @@ Connection_ptr Connection::retrieve_shared() {
 {
 }*/
 
-Connection::TCB::TCB(const uint32_t recvwin)
-  : SND{ 0, 0, default_window_size, 0, 0, 0, default_mss, 0, false },
+Connection::TCB::TCB(const uint16_t mss, const uint32_t recvwin)
+  : SND{ 0, 0, default_window_size, 0, 0, 0, mss, 0, false },
     ISS{(seq_t)4815162342},
     RCV{ 0, recvwin, 0, 0, 0 },
     IRS{0},
@@ -108,8 +136,8 @@ Connection::TCB::TCB(const uint32_t recvwin)
 {
 }
 
-Connection::TCB::TCB()
-  : Connection::TCB(default_window_size)
+Connection::TCB::TCB(const uint16_t mss)
+  : Connection::TCB(mss, default_window_size)
 {
 }
 
@@ -120,12 +148,18 @@ void Connection::reset_callbacks()
   writeq.on_write(nullptr);
   on_close_.reset();
   recv_wnd_getter.reset();
-  if(read_request)
-    read_request->callback.reset();
+  if(read_request) {
+    read_request->on_read_callback.reset();
+    read_request->on_data_callback.reset();
+  }
+}
+
+uint16_t Connection::MSS() const noexcept {
+  return host_.MSS(ipv());
 }
 
 uint16_t Connection::MSDS() const noexcept {
-  return std::min(host_.MSS(), cb.SND.MSS) + sizeof(Header);
+  return std::min(MSS(), cb.SND.MSS) + sizeof(Header);
 }
 
 size_t Connection::receive(seq_t seq, const uint8_t* data, size_t n, bool PUSH) {
@@ -277,7 +311,7 @@ void Connection::close() {
 void Connection::receive_disconnect() {
   Expects(read_request and read_request->size());
 
-  if(read_request->callback) {
+  if(read_request->on_read_callback) {
     // TODO: consider adding back when SACK is complete
     //auto& buf = read_request->buffer;
     //if (buf.size() > 0 && buf.missing() == 0)
@@ -330,10 +364,8 @@ Packet_view_ptr Connection::create_outgoing_packet()
   packet->set_source(local_);
   // Set Destination (remote)
   packet->set_destination(remote_);
-  uint32_t shifted = std::min<uint32_t>((cb.RCV.WND >> cb.RCV.wind_shift), default_window_size);
-  Ensures(shifted <= 0xffff);
 
-  packet->set_win(shifted);
+  packet->set_win(std::min((cb.RCV.WND >> cb.RCV.wind_shift), (uint32_t)default_window_size));
 
   if(cb.SND.TS_OK)
     packet->add_tcp_option_aligned<Option::opt_ts_align>(host_.get_ts_value(), cb.get_ts_recent());
@@ -791,7 +823,6 @@ void Connection::recv_data(const Packet_view& in)
     return;
    }
 
-
   // Keep track if a packet is being sent during the async read callback
   const auto snd_nxt = cb.SND.NXT;
 
@@ -1179,13 +1210,20 @@ void Connection::start_dack()
 
 void Connection::signal_connect(const bool success)
 {
-  // if on read was set before we got a seq number,
+  // if read request was set before we got a seq number,
   // update the starting sequence number for the read buffer
   if(read_request and success)
     read_request->set_start(cb.RCV.NXT);
 
   if(on_connect_)
     (success) ? on_connect_(retrieve_shared()) : on_connect_(nullptr);
+
+  // If no data event was registered we still want to start buffering here,
+  // in case the user is not yet ready to subscribe to data.
+  if (read_request == nullptr and success) {
+    read_request.reset(
+      new Read_request(this->cb.RCV.NXT, host_.min_bufsize(), host_.max_bufsize(), bufalloc.get()));
+  }
 }
 
 void Connection::signal_close()
@@ -1214,8 +1252,10 @@ void Connection::clean_up() {
   on_disconnect_.reset();
   on_close_.reset();
   recv_wnd_getter.reset();
-  if(read_request)
-    read_request->callback.reset();
+  if(read_request) {
+    read_request->on_read_callback.reset();
+    read_request->on_data_callback.reset();
+  }
 
 
   debug2("<Connection::clean_up> Call clean_up delg on %s\n", to_string().c_str());
@@ -1350,7 +1390,7 @@ void Connection::add_option(Option::Kind kind, Packet_view& packet) {
   switch(kind) {
 
   case Option::MSS: {
-    packet.add_tcp_option<Option::opt_mss>(host_.MSS());
+    packet.add_tcp_option<Option::opt_mss>(MSS());
     debug2("<TCP::Connection::add_option@Option::MSS> Packet: %s - MSS: %u\n",
            packet.to_string().c_str(), ntohs(*(uint16_t*)(packet.tcp_options()+2)));
     break;
