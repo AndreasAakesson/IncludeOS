@@ -23,6 +23,7 @@
 
 #include <hw/pci_manager.hpp>
 #include <hal/machine.hpp>
+#include <usb/xhci.hpp>
 
 namespace hw {
 
@@ -67,6 +68,18 @@ static inline bool register_device(hw::PCI_Device& dev,
   }
   INFO2("|  +-x Driver not found ");
   return false;
+}
+
+static inline void create_serialbus(hw::PCI_Device& dev)
+{
+  INFO2("|--[ %s ]", dev.to_string().c_str());
+  if(not (dev.vendor_id() == PCI::VENDOR_QEMU) or not (dev.product_id() == 0x000D))
+  {
+    INFO2("|  +-x Driver not found ");
+    return;
+  }
+  INFO2("|");
+  os::machine().add(std::make_unique<usb::XHCI>(dev));
 }
 
 PCI_manager::Device_vector PCI_manager::devices () {
@@ -128,6 +141,10 @@ void PCI_manager::init_devices(const uint8_t classcode)
       }
       case PCI::NIC: {
         register_device<NIC_driver, hw::Nic>(stored_dev, nic_fact);
+        break;
+      }
+      case PCI::SERIAL_BUS: {
+        create_serialbus(stored_dev);
         break;
       }
       default:

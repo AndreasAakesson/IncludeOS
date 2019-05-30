@@ -107,6 +107,8 @@ void __platform_init()
   kernel::state().block_drivers_ready = true;
   // Initialize network devices
   hw::PCI_manager::init_devices(PCI::NIC);
+  // Initialize serial bus controllers
+  hw::PCI_manager::init_devices(PCI::SERIAL_BUS);
   // Print registered devices
   os::machine().print_devices();
 }
